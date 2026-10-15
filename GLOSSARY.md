@@ -77,7 +77,7 @@ One presence record for one student at one event.
 _Avoid:_ check-in row, attendance attempt.
 
 **Attendance Status**:
-The presence state of an attendance record, `PRESENT` or `ABSENT`. A present record has `markedPresentAt`; an absent record requires a reason.
+The presence state of an attendance record, `PRESENT`. A present record has `markedPresentAt`; absence is simply the lack of a presence record. A walk-in is a separate, audited exception recorded by an `ATTENDANCE_STAFF` or `ADMIN` account, with its own reason. It is NOT authorized through an `ApprovalAuthority` — that governs Event publish steps only.
 _Avoid:_ registration status.
 
 **Approved Walk-in**:
