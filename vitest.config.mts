@@ -18,8 +18,20 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["src/**/*.test.{ts,tsx}"],
-          exclude: ["src/stories/**"],
+          exclude: ["src/stories/**", "src/**/*.integration.test.{ts,tsx}"],
           setupFiles: ["./vitest.setup.ts"],
+        },
+      },
+      {
+        resolve: {
+          tsconfigPaths: true,
+        },
+        test: {
+          name: "integration",
+          include: ["src/**/*.integration.test.{ts,tsx}"],
+          exclude: ["src/stories/**"],
+          setupFiles: ["./vitest.setup.ts", "./vitest.integration.setup.ts"],
+          fileParallelism: false,
         },
       },
       {
