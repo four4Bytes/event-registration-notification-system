@@ -14,7 +14,7 @@ import { createFieldValidator } from "@/lib/validation/form-utils";
 
 import styles from "./EditRoleModal.module.css";
 
-const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN];
+const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN, Role.ATTENDANCE_STAFF, Role.APPROVER];
 type AssignableRole = (typeof roles)[number];
 
 interface EditRoleModalProps {

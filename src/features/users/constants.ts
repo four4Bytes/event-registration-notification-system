@@ -5,4 +5,6 @@ export const roleLabels: Record<Role, string> = {
   OFFICER: "Officer",
   ADMIN: "Admin",
   DEV: "Dev",
+  ATTENDANCE_STAFF: "Attendance Staff",
+  APPROVER: "Approver",
 };

@@ -12,6 +12,8 @@ enum Role {
   OFFICER
   ADMIN
   DEV
+  ATTENDANCE_STAFF
+  APPROVER
 }
 
 enum NotificationAudience {
