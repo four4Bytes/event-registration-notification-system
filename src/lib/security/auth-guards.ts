@@ -1,4 +1,5 @@
 import { Role } from "@/generated/prisma/browser";
+
 import { auth } from "@/lib/infra/auth";
 import { DeactivatedError, ForbiddenError, UnauthorizedError } from "@/lib/security/errors";
 import { can, type Permission } from "@/lib/security/rbac";
