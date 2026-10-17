@@ -29,7 +29,7 @@ The 20 decisions settled during the planning interview, one line each. Until thi
 
 ## Retired or superseded by ADR-0007
 
-- `ATTENDANCE_STAFF` as a login role (decisions 6 and 12): dropped; the enum value remains deprecated and unused.
+- `ATTENDANCE_STAFF` as a login role (decisions 6 and 12): dropped; the unpushed migration that added the enum value was reverted, so no `ATTENDANCE_STAFF` value exists.
 - `ApprovalAuthority` plus delegation (decision 16): replaced by `ApprovalStep` with holder users.
 - The `BOUNCED` email outcome: removed; a delivery attempt ends as `SENT` or `FAILED`.
 - The separate walk-in table (decision 12): rejected by ADR-0003.

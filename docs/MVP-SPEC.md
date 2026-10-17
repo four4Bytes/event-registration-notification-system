@@ -7,7 +7,7 @@ A campus event system needs to manage student registration, staff-assisted atten
 ## Existing Repo Building Blocks
 
 - **Google OAuth** with school-domain gate (`@acdeducation.com`), Auth.js v5, NextAuth session
-- **User management**: `Role` enum (STUDENT, OFFICER, ADMIN, DEV, APPROVER; `ATTENDANCE_STAFF` deprecated by ADR-0007); `manageUsers` permission = ADMIN | DEV; `sendNotifications` permission = OFFICER | ADMIN | DEV
+- **User management**: `Role` enum (STUDENT, OFFICER, ADMIN, DEV, APPROVER; `ATTENDANCE_STAFF` dropped by ADR-0007); `manageUsers` permission = ADMIN | DEV; `sendNotifications` permission = OFFICER | ADMIN | DEV
 - **Notification send/feed**: Server Actions in `src/features/notifications/` (`actions.ts` / `mutations.ts` / `queries.ts`), mutations `createNotification` / `markNotificationRead`, queries `getNotificationsForUser` / `getUnreadNotificationsForUser`
 - **Attendance unique rule**: `@@unique([eventId, studentId])` one presence record per student per event
 - **Prisma models**: User, Club, Event, Attendance, Notification, NotificationRead, PendingRoleAssignment

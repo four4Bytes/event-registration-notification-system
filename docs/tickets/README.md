@@ -4,7 +4,7 @@ The 20 settled decisions behind this plan live in `docs/DECISIONS.md`, each link
 
 12 tickets. Council = a holder of the Council approval step (no role beyond `APPROVER`). No separate student-profile ticket: the profile already exists (`User` name/email/image/clubId/role + Google login + `Club.members`), covered by Tickets 2 (roles), 6 (audience includes them), 11 (account creation).
 
-ADR-0007 simplified roles and approval: `ATTENDANCE_STAFF` is dropped (deprecated enum value, no assignment path), `markAttendance` = OFFICER|ADMIN; `ApprovalAuthority` and delegation are replaced by one `ApprovalStep` with its holder users; `BOUNCED` is removed; manual reminders merged into Ticket 9; officer contacts are a `Club` field; attendance and walk-ins merged into Ticket 8; the REST/OpenAPI ticket is dropped.
+ADR-0007 simplified roles and approval: `ATTENDANCE_STAFF` is dropped (no enum value, no assignment path), `markAttendance` = OFFICER|ADMIN; `ApprovalAuthority` and delegation are replaced by one `ApprovalStep` with its holder users; `BOUNCED` is removed; manual reminders merged into Ticket 9; officer contacts are a `Club` field; attendance and walk-ins merged into Ticket 8; the REST/OpenAPI ticket is dropped.
 
 ## Dependency table
 

@@ -6,14 +6,9 @@ Amends ADRs 0001 (access roles and approval authority), 0002 (registration lifec
 
 `markAttendance` = OFFICER or ADMIN. A separate attendance-only login role buys no new authority: officers and administrators already operate events, and the role added an enum value, an assignment path and a dropdown entry for a permission they can hold directly.
 
-The enum value already exists in committed code (`25078a9`) and **stays in the enum**: Postgres cannot remove a value from an enum type additively, and enum removal is not an additive migration. It is therefore **deprecated and unused**:
+The enum value was added by committed code (`25078a9`), but nothing had been pushed and no shared database had ever run that migration, so the addition was **reverted rather than deprecated**: the migration now adds only `APPROVER`, and the role is absent from `schema.prisma`, `AssignableRoleSchema`, the three role pickers and `roleLabels`. That window is the only one in which it could be done at all — Postgres cannot remove a value from an enum type additively.
 
-- no assignment path (`AssignableRoleSchema` must not list it),
-- no dropdown entry in the three role pickers,
-- no permission grants it (`markAttendance` is OFFICER/ADMIN),
-- the `roleLabels` map keeps a key only because `Record<Role, string>` requires one for every enum value.
-
-Consequence: Ticket 2 needs a follow-up correction (recorded in `docs/tickets/02-roles-permission-map.md`), including two assertions in `rbac.test.ts` and one row in `roles.integration.test.ts` that must change from `ATTENDANCE_STAFF` to `OFFICER`. Those are settled-decision changes, not weakened guards: the matrix still asserts every role against every permission, and a denied-role assertion is added, not removed.
+Consequence: Ticket 2's follow-up correction (recorded in `docs/tickets/02-roles-permission-map.md`) changed `markAttendance` to OFFICER/ADMIN, removed the `ATTENDANCE_STAFF` rows from the `rbac.test.ts` matrix and the `ATTENDANCE_STAFF` user row from `roles.integration.test.ts`, and rewrote the unpushed migration. Those are settled-decision changes, not weakened guards: the matrix still asserts every role against every permission, a test now enforces that coverage and that every permission keeps denied roles, and `roles.integration.test.ts` asserts the database enum rejects `ATTENDANCE_STAFF`.
 
 ## 2. Keep `APPROVER`; one model instead of two
 
