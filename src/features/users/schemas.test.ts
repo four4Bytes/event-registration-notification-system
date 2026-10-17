@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { Role } from "@/generated/prisma/browser";
 import {
   AddPendingUserSchema,
   AssignableRoleSchema,
   UpdateRoleSchema,
 } from "@/features/users/schemas";
+import { Role } from "@/generated/prisma/browser";
 
 const userId = `c${"a".repeat(24)}`;
 

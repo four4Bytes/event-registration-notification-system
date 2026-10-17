@@ -3,12 +3,7 @@ import { z } from "zod";
 import { Role } from "@/generated/prisma/browser";
 import { emailText, requiredText } from "@/lib/validation/form-utils";
 
-export const AssignableRoleSchema = z.enum([
-  Role.STUDENT,
-  Role.OFFICER,
-  Role.ADMIN,
-  Role.APPROVER,
-]);
+export const AssignableRoleSchema = z.enum([Role.STUDENT, Role.OFFICER, Role.ADMIN, Role.APPROVER]);
 
 const cuidSchema = z.string().regex(/^c[a-z0-9]{24}$/, "Invalid user identifier");
 
