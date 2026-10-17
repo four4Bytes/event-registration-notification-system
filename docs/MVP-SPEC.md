@@ -41,7 +41,7 @@ A campus event system needs to manage student registration, staff-assisted atten
 6. As a SYSTEM, I want to send an email notification per recipient so that the attempt starts as QUEUED and ends as exactly one of SENT or FAILED with reason and attempt count, and email outcome never alters in-app read/acknowledge state.
 7. As an ADMIN, I want to view per-recipient email delivery detail so that I can diagnose send failures, but other roles never see this data.
 8. As an OFFICER or ADMIN, I want to mark a student PRESENT at an event so that one presence record exists per student per event, and walk-ins are recorded separately with a reason and an audited recording actor.
-9. As an ADMIN, I want to approve an event through an ordered approval chain (Council → Dean → OSA → Security) so that only PUBLISHED events accept registration and attendance.
+9. As a step holder (an APPROVER, an OFFICER, or an ADMIN assigned to the current step), I want to approve an event through an ordered approval chain (Council → Dean → OSA → Security) so that only PUBLISHED events accept registration and attendance, and no one may approve an event they created or submitted.
 10. As a user with a suspended or inactive account, I am refused on every notification, registration, attendance, and approval operation.
 11. As an ADMIN, I want to import student records from CSV so that the system writes audit entries (actor, time, row count, errors), skips existing emails and reports them, and never changes or overwrites existing records.
 12. As a DEV, I want a mock SMS seam so that tests can simulate message sends without contacting a real gateway.
@@ -52,12 +52,12 @@ A campus event system needs to manage student registration, staff-assisted atten
 - Registration: one row per (eventId, userId); status REGISTERED/CANCELLED; confirmation reference preserved; capacity cap enforced; cancellation refused if attendance exists; registration and re-registration refused when an attendance row exists; re-registration re-runs eligibility/window/capacity.
 - Attendance: `@@unique([eventId, studentId])`; PRESENT record with `markedPresentAt`; walk-in is a flagged presence row, separately audited with a reason and the recording actor (OFFICER or ADMIN); never consumes capacity.
 - Notification in-app: UNREAD → READ → ACK (ACK only for IMPORTANT; ACK implies read); per-recipient delivery attempt starts QUEUED and ends as exactly one of SENT or FAILED; email outcome never modifies in-app state.
-- Approval chain: Event status DRAFT → PENDING_APPROVAL → (REVISION_REQUESTED → APPROVED → PUBLISHED); only PUBLISHED accepts registration; attendance requires published event inside window; permission = "is the acting user a holder of the current ApprovalStep"; every decision writes audit entry; every reassignment of step holders writes an audit entry; skipping step refused.
+- Approval chain: Event status DRAFT → PENDING_APPROVAL → (REVISION_REQUESTED → APPROVED → PUBLISHED); only PUBLISHED accepts registration; attendance requires published event inside window; permission = "is the acting user a holder of the current ApprovalStep"; every decision writes audit entry; every reassignment of step holders writes an audit entry; a holder may be an APPROVER, an OFFICER or an ADMIN, only when assigned; an ADMIN is refused on a step it is not assigned to; approving an event the actor created or submitted is refused; every approval records the approver and their role; skipping step refused.
 - Email RA 10173: Per-recipient detail Administrator-only; no response or log exposes more personal data than the feature requires.
 - Role gates for registration: STUDENT may register/cancel/re-register; other roles (OFFICER, ADMIN, DEV, APPROVER) are denied on sub-operations.
 - Role gates for attendance: OFFICER or ADMIN may mark PRESENT/walk-in; other roles are denied on sub-operations.
 - Role gates for notification: AUTHORIZED roles (OFFICER, ADMIN, DEV) may create/acknowledge notifications and send manual reminders; other roles are denied on sub-operations.
-- Role gates for approval chain: holders of the current `ApprovalStep` (an APPROVER, or an OFFICER for the Council step) may approve/reject/request revision/publish; other roles are denied on sub-operations.
+- Role gates for approval chain: holders of the current `ApprovalStep` (an APPROVER, an OFFICER, or an ADMIN assigned to that step) may approve/reject/request revision/publish; an ADMIN is denied on a step it is not assigned to; an actor is denied on an event they created or submitted; other roles are denied on sub-operations.
 - Role gates for email: per-recipient delivery detail visible only to ADMIN; other roles are denied on sub-operations.
 - Role gates for CSV import: ADMIN may import; other roles are denied.
 - Suspended/inactive accounts: refused on every operation.
@@ -82,7 +82,7 @@ A campus event system needs to manage student registration, staff-assisted atten
 ## Outstanding Assumptions (pending sign-off)
 
 - Email sender and hosting unconfirmed; SMTP settings use `SMTP_*` names from `.env.example`.
-- an approval step's holders are the users set by an Administrator (an `OFFICER` user for the Council step); the permission check is "is the acting user a holder of the current step"; reassigning holders is audited and delegation is Phase 2 (ADR-0007).
+- **ASSUMED, pending sign-off**: an approval step's holders are the users set by an Administrator — an `APPROVER`, an `OFFICER` (the Council step) or an `ADMIN` — in every case only when explicitly assigned to that step; an `ADMIN` has no approval power on a step it is not assigned to, no user may approve an event they created or submitted, and reassigning holders is audited (ADR-0007 §8); delegation is Phase 2.
 - `DEV` is an admin-equivalent support role, not a business role in approvals or reports.
 - Council answers change configuration, not code.
 - Per-recipient email delivery detail is Administrator-only under RA 10173; other roles see only in-app state.

@@ -12,7 +12,7 @@ Consequence: Ticket 2's follow-up correction (recorded in `docs/tickets/02-roles
 
 ## 2. Keep `APPROVER`; one model instead of two
 
-`APPROVER` stays the only new login role — a login role distinct from ADMIN, so an approval decision is attributable to a named approver rather than to general administration. The office lives on the approval step, not on the role: a step's holder may be an APPROVER or an OFFICER.
+`APPROVER` stays the only new login role — a login role distinct from ADMIN, so an approval decision is attributable to a named approver rather than to general administration. The office lives on the approval step, not on the role: a step's holder may be an APPROVER, an OFFICER or an ADMIN, in every case only when an Administrator has assigned them to that step (§8).
 
 `ApprovalAuthority` and the delegation ticket are replaced by a single `ApprovalStep` that stores:
 
@@ -51,6 +51,14 @@ Decision: drop the ticket. **The per-route 401/403 tests go with it** — with n
 
 Trade-off to confirm: **this drop is conditional.** If a course rubric or panel explicitly requires a documented HTTP API, the ticket comes back (an optional last ticket, `docs/tickets/13-rest-api.md` style) and this decision reverses on its own; no other decision depends on it. Pending that answer, REST stays dropped.
 
+## 8. Who may hold an approval step (ADMIN included)
+
+An approval step's holder may be an `APPROVER`, an `OFFICER` (the Council step) or an `ADMIN`, in every case only when an Administrator has explicitly assigned that user to that step. An `ADMIN` has no approval power on any step it is not assigned to. No user may approve an event they created or submitted, even when they hold the step. Assigning and reassigning holders is audited, and every approval records the approver and their role. For a small organization or a demo, an Administrator may be assigned to all steps.
+
+**ASSUMED, pending sign-off**: this is a judgement about who may act, not a settled institutional answer; it sits alongside the open assumptions in `docs/MVP-SPEC.md` and ADR-0005.
+
+Rejected: letting an `ADMIN` approve any step automatically. It would let an administrator approve an event they created themselves, and it makes a decision attributable to general administration rather than to a named holder — the accountability the chain exists to provide. Assignment stays explicit so every approval names the person who made it.
+
 ## Consequences
 
 - Ticket count 16 → 12. Unstarted tickets renumbered `03…12`; completed tickets `01` and `02` keep their numbers and commit hashes.
@@ -60,4 +68,4 @@ Trade-off to confirm: **this drop is conditional.** If a course rubric or panel 
 
 ## Rejected alternatives
 
-Rejected: keeping `ATTENDANCE_STAFF` as an assignable role (an assignment path, a dropdown entry and a permission for authority officers already hold); keeping `ApprovalAuthority` plus delegation references (two structures where one step-plus-holders answers "who may act"); keeping `BOUNCED` (no bounce webhook in the MVP, so an unreachable state); a separate walk-in table (parallel presence records under one unique rule); a separate officer-contact model (a name and an email on `Club`); a separate reminders ticket and send path (the same mechanism); and building a v1 REST surface against `AGENTS.md:56` while nothing in `docs/MVP-SPEC.md` requires one. Each remains reversible on an explicit requirement — delegation, bounce handling and any REST surface are listed as Phase 2.
+Rejected: keeping `ATTENDANCE_STAFF` as an assignable role (an assignment path, a dropdown entry and a permission for authority officers already hold); keeping `ApprovalAuthority` plus delegation references (two structures where one step-plus-holders answers "who may act"); keeping `BOUNCED` (no bounce webhook in the MVP, so an unreachable state); a separate walk-in table (parallel presence records under one unique rule); a separate officer-contact model (a name and an email on `Club`); a separate reminders ticket and send path (the same mechanism); and building a v1 REST surface against `AGENTS.md:56` while nothing in `docs/MVP-SPEC.md` requires one; and letting an `ADMIN` approve any step automatically, which would allow approving an event the administrator created (§8). Each remains reversible on an explicit requirement — delegation, bounce handling and any REST surface are listed as Phase 2.

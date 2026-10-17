@@ -105,7 +105,7 @@ The ordered state machine `DRAFT → PENDING_APPROVAL → (REVISION_REQUESTED | 
 _Avoid:_ event status as free text.
 
 **Approval Step**:
-A configured step in the event approval chain, with an office (Council, Dean, OSA, Security), an order position, a condition description, and one or more holder users. There is no role field on the step. Skipping a step is refused.
+A configured step in the event approval chain, with an office (Council, Dean, OSA, Security), an order position, a condition description, and one or more holder users. There is no role field on the step: a holder may be an Approver, an OFFICER or an ADMIN, only when assigned to that step. Skipping a step is refused.
 _Avoid:_ approval stage, review gate.
 
 **Approval Chain**:
@@ -113,7 +113,7 @@ The ordered sequence of `ApprovalStep`s per event, where each step must be appro
 _Avoid:_ approval workflow, gate sequence.
 
 **Approval Step Holder**:
-A user assigned to act for a specific approval step (the holders recorded on that `ApprovalStep`), set by an Administrator; each reassignment is audited. A holder may be an Approver or an OFFICER (the Council step's holder is an OFFICER). The permission check is "is the acting user a holder of the current step". Delegation is Phase 2 (ADR-0007).
+A user assigned to act for a specific approval step (the holders recorded on that `ApprovalStep`), set by an Administrator; each reassignment is audited. A holder may be an Approver, an OFFICER or an ADMIN, in every case only when assigned to that step (the Council step's holder is an OFFICER). An ADMIN has no approval power on a step it is not assigned to, and no user may approve an event they created or submitted. The permission check is "is the acting user a holder of the current step". Delegation is Phase 2 (ADR-0007).
 _Avoid:_ role alone, permission check alone, Approver as a synonym for holder.
 
 **Revision Requested**:
