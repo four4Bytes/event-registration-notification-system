@@ -1,4 +1,4 @@
-# Ticket 7 — Eligibility and registration fields
+# Ticket 6 — Eligibility and registration fields
 
 - Needs: 2, 4
 - Label: ready-for-agent

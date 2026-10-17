@@ -1,5 +1,7 @@
 # Minimum-necessary exposure and deferred decisions
 
+> **Amended by ADR-0007**: manual reminders are merged into the notifications ticket, `BOUNCED` is removed from the email outcomes, and attendance is recorded by `OFFICER` or `ADMIN` rather than `ATTENDANCE_STAFF`.
+
 ## RA 10173: minimum-necessary exposure
 
 No response or log output may expose more personal data than the feature requires. Per-recipient email delivery detail is disclosed only to administrators; other roles see only the in-app read/acknowledgment state. Log entries, API responses, and audit records must strip or omit email addresses, personal identifiers, and any data not strictly necessary for the feature's operation.
@@ -20,13 +22,13 @@ Rejected alternative: including a production SMS gateway in the MVP, which would
 
 ## Manual reminders
 
-Manual reminder notifications may be sent outside the automated approval/window flow, initiated by an `ATTENDANCE_STAFF` or `ADMIN`. These are not part of the automatic registration-window reminder logic and are tracked as standalone notification sends with their own email delivery attempt.
+Manual reminder notifications may be sent outside the automated approval/window flow, initiated by an `OFFICER` or `ADMIN` and built as a checkbox in the notifications ticket (ADR-0007). These are not part of the automatic registration-window reminder logic and are tracked as standalone notification sends with their own email delivery attempt.
 
 Rejected alternative: bundling reminder logic into the automatic registration-window flow, which would conflate two distinct responsibilities and complicate the email-failure-isolation model.
 
 ## QR scanning and the in/out presence pair deferred to Phase 2
 
-QR code scanning for check-in is deferred to Phase 2. The in/out presence pair (scan event → `PRESENT` record creation, optional later `ABSENT` marking) will be added after MVP, together with the attendance-correction framework. Until then, attendance is recorded manually by `ATTENDANCE_STAFF` or `ADMIN`.
+QR code scanning for check-in is deferred to Phase 2. The in/out presence pair (scan event → `PRESENT` record creation, optional later `ABSENT` marking) will be added after MVP, together with the attendance-correction framework. Until then, attendance is recorded manually by an `OFFICER` or `ADMIN` (ADR-0007).
 
 Rejected alternative: adding QR-based check-in to the MVP, which would require camera/permissions UI, gateway integration, and a parallel presence model that conflicts with the single-`@@unique([eventId, studentId])` contract.
 

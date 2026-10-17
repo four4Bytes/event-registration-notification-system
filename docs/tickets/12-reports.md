@@ -1,12 +1,12 @@
-# Ticket 15 — Reports
+# Ticket 12 — Reports
 
-- Needs: 5, 8, 9, 10, 11
+- Needs: 5, 7, 8, 9
 - Label: ready-for-agent
 - Schema change: no (queries only)
 
 ## Scope
 
-Read-only reports. Council = OFFICER with Council-scope authority (consistent with Tickets 5 and 12).
+Read-only reports. Council = a holder of the Council approval step (consistent with Tickets 5 and 10).
 
 ## Acceptance checkboxes
 

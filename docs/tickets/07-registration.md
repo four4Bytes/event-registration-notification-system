@@ -1,6 +1,6 @@
-# Ticket 8 — Registration: confirmation reference, cancel and re-register
+# Ticket 7 — Registration: confirmation reference, cancel and re-register
 
-- Needs: 4, 7
+- Needs: 4, 6
 - Label: ready-for-agent
 - Schema change: yes (Registration model: status, confirmationReference, timestamps)
 

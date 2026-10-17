@@ -1,16 +1,16 @@
-# Ticket 12 — Club officer contacts and officer email on publish
+# Ticket 10 — Club officer contact and officer email on publish
 
-- Needs: 4, 11
+- Needs: 4, 9
 - Label: built on assumptions, pending sign-off
-- Schema change: yes (club officer-contact metadata model)
+- Schema change: yes (officer-contact field on Club)
 
 ## Scope
 
-Officers are not Users. Council = OFFICER with active Council-scope ApprovalAuthority.
+Officers are not Users. Officer contacts are a field on `Club` (name + email) edited on the one club screen — no separate metadata model (ADR-0007). Council = a holder of the Council approval step.
 
 ## Acceptance checkboxes
 
-1. [ ] Officer contacts are club metadata entered by Administrator or Council (not Users), with an admin screen.
+1. [ ] Officer contact is a `Club` field, edited by an Administrator or a Council member; officers stay non-users.
 2. [ ] On publish, each officer gets event details + mechanics checklist; email failure never blocks publishing.
 3. [ ] Council sees officer name, club, SENT/FAILED only; full emails and delivery detail are Administrator-only.
 4. [ ] Authentication, suspended/inactive refusal, and a role gate tested for each denied role on contact editing and log viewing.
@@ -21,6 +21,6 @@ As per checkbox 4 for every operation added here.
 
 ## Minimal UI
 
-Officer-contacts screen + publish-triggered send log.
+Club screen officer-contact field + publish-triggered send log.
 
 Assumptions: email sender/hosting unconfirmed.

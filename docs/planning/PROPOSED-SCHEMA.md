@@ -2,6 +2,8 @@
 
 These schema changes were discussed during the design grill (Step 3) but not applied to the
 live `prisma/schema.prisma`. They are recorded here for ticket planning purposes.
+**Shape updated by ADR-0007** (simplified roles and approval): no `ApprovalAuthority` model, no
+`ATTENDANCE_STAFF` assignment, no `BOUNCED` outcome.
 
 ## Changes relative to committed `prisma/schema.prisma`
 
@@ -19,36 +21,37 @@ enum EventStatus {
 }
 ```
 
-### 2. New model: `ApprovalStep`
+### 2. New model: `ApprovalStep` (with its holder users)
 
 ```prisma
 model ApprovalStep {
-  id                String   @id @default(cuid())
-  eventType         String   // e.g. "Council", "Dean", "OSA", "Security"
-  stepOrder         Int      // ordinal position in the chain
-  condition         String   // free-form condition description (pending sign-off)
-  authorityRequired Role // which role must hold the approval authority
-  isMandatory       Boolean  @default(true)
+  id          String   @id @default(cuid())
+  office      String   // "Council", "Dean", "OSA", "Security"
+  stepOrder   Int      // ordinal position in the chain
+  condition   String   // free-form condition description (pending sign-off)
+  isMandatory Boolean  @default(true)
+  holders     ApprovalStepHolder[]
+}
+
+model ApprovalStepHolder {
+  id     String       @id @default(cuid())
+  stepId String
+  step   ApprovalStep @relation(fields: [stepId], references: [id])
+  userId String
+  user   User         @relation(fields: [userId], references: [id])
+
+  @@unique([stepId, userId])
 }
 ```
 
-### 3. New model: `ApprovalAuthority`
+An Administrator sets a step's holders and can reassign them at any time; each reassignment writes
+an audit entry. The Council step's holder is an OFFICER user.
 
-```prisma
-model ApprovalAuthority {
-  id                String   @id @default(cuid())
-  userId            String
-  role              Role
-  eventType         String   // which approval step this applies to
-  stepOrder         Int
-  authorityScope    String   // e.g. "Council", "Dean", "OSA", "Security"
-  delegationId      String?  // optional delegation record reference
-  delegatedTo       String?  // user the authority is delegated to (email or id)
-  isActive          Boolean  @default(true)
-  grantedAt         DateTime @default(now())
-  revokedAt         DateTime?
-}
-```
+### 3. Removed by ADR-0007: `ApprovalAuthority`
+
+The single `ApprovalAuthority` model (user + role + scope + delegation refs) is not built. Its job —
+"who may act for this step" — is answered by `ApprovalStep` plus its holders. Delegation moves to
+Phase 2.
 
 ### 4. Modified model: `Event`
 

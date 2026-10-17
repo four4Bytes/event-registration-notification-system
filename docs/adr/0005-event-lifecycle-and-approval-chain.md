@@ -1,5 +1,7 @@
 # Event lifecycle and approval-chain model
 
+> **Superseded in part by ADR-0007** (simplified roles and approval). Changed: `ApprovalAuthority` and the delegation references are replaced by one `ApprovalStep` that stores the office and the user(s) holding it, reassigned by an Administrator with an audit entry per reassignment. The lifecycle states, the no-skip rule, condition semantics and the per-decision audit entries are unchanged.
+
 Events progress through a seven-state machine: `DRAFT → PENDING_APPROVAL → (REVISION_REQUESTED | APPROVED → PUBLISHED | CANCELLED)`. Only `PUBLISHED` events accept registration, and attendance requires a published event inside its window.
 
 The approval chain is modelled as data through `ApprovalStep` records, one per event type (Council, Dean, OSA, Security), each with an ordinal position, a free-form condition description (pending sign-off: Council final authority; Dean only off-campus or outside-coordination; OSA only school-wide, minors or outside guests; Security above a configurable threshold, demo placeholder 100 participants), and a required role. Skipping a step is refused. Every decision (approve, reject, request revision, delegate) writes an audit entry. The permission check is "has an active ApprovalAuthority for the current step", applicable on an APPROVER user or on an OFFICER for the Council step.

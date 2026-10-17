@@ -20,21 +20,17 @@ _Avoid:_ Admin, DEV.
 A technical support login role with operational access to run and maintain the system. It is not a business role in approvals or reports.
 _Avoid:_ superuser concept.
 
-**Attendance Staff**:
-A built-in login role for users whose business authority is recording student attendance.
-_Avoid:_ attendance officer.
+**Attendance Staff** (deprecated):
+A former login role for recording attendance. Dropped from the model by ADR-0007: no assignment path, no dropdown entry, and `markAttendance` is held by OFFICER and ADMIN. The enum value remains only because Postgres cannot remove an enum value additively.
+_Avoid:_ using it for new assignments.
 
 **Approver**:
-A built-in login role for users assigned to an `ApprovalAuthority`.
+A built-in login role for users assigned as a holder of an approval step.
 _Avoid:_ approver type names such as Dean or OSA as roles.
 
 **Club Officer**:
 A student club title, not a system user or login role.
 _Avoid:_ Officer, Club Officer account, club login.
-
-**ApprovalAuthority**:
-An assigned, scoped authority determining who may act for an approval step.
-_Avoid:_ approval role, approval permission alone.
 
 **Registration**:
 One record for one student at one event that persists through repeated registration, cancellation, and repeated registration.
@@ -77,7 +73,7 @@ One presence record for one student at one event.
 _Avoid:_ check-in row, attendance attempt.
 
 **Attendance Status**:
-The presence state of an attendance record, `PRESENT`. A present record has `markedPresentAt`; absence is simply the lack of a presence record. A walk-in is a separate, audited exception recorded by an `ATTENDANCE_STAFF` or `ADMIN` account, with its own reason. It is NOT authorized through an `ApprovalAuthority` — that governs Event publish steps only.
+The presence state of an attendance record, `PRESENT`. A present record has `markedPresentAt`; absence is simply the lack of a presence record. A walk-in is a separate, audited exception recorded by an `OFFICER` or `ADMIN` account, with its own reason. It is NOT authorized through an event approval step — that governs Event publish only.
 _Avoid:_ registration status.
 
 **Approved Walk-in**:
@@ -105,7 +101,7 @@ A recipient state of `UNREAD`, `READ`, or `ACKNOWLEDGED`, where acknowledgment i
 _Avoid:_ email delivery status.
 
 **Email Delivery Attempt**:
-A separate per-recipient record, `QUEUED`, `SENT`, `FAILED`, or `BOUNCED`, with reason, attempt count, and timestamps. SENT means the SMTP server accepted the message, not that it was delivered.
+A separate per-recipient record, `QUEUED`, `SENT`, or `FAILED`, with reason, attempt count, and timestamps. SENT means the SMTP server accepted the message, not that it was delivered.
 _Avoid:_ opened, delivered.
 
 **Per-Recipient Delivery Detail**:
@@ -121,11 +117,11 @@ A configured step in the event approval chain, with an event type label (Council
 _Avoid:_ approval stage, review gate.
 
 **Approval Chain**:
-The ordered sequence of `ApprovalStep`s per event, where each step must be approved (or delegated) before the next may begin. Council answers change configuration, not code.
+The ordered sequence of `ApprovalStep`s per event, where each step must be approved before the next may begin. Council answers change configuration, not code.
 _Avoid:_ approval workflow, gate sequence.
 
-**Approval Authority**:
-An active assignment of a role to a user for a specific approval step and event scope, with optional delegation. The permission check is "has an active ApprovalAuthority for the current step".
+**Approval Step Holder**:
+The user(s) recorded on an approval step as allowed to act for it, set by an Administrator; each reassignment is audited. The permission check is "is the acting user a holder of the current step". Delegation is Phase 2 (ADR-0007).
 _Avoid:_ role alone, permission check alone.
 
 **Revision Requested**:
@@ -144,7 +140,7 @@ SMS delivery is out of the MVP; only a mock seam exists for development and test
 _Avoid:_ production SMS gateway in MVP, real phone numbers in tests.
 
 **Manual Reminders**:
-System-supported manual reminder notifications sent outside the automated approval/window flow.
+System-supported manual reminder notifications sent outside the automated approval/window flow, built as a checkbox in the notifications ticket (ADR-0007).
 _Avoid:_ automated SMS/email reminder sweep as MVP.
 
 **QR Scanning (Phase 2)**:
