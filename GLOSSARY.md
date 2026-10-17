@@ -25,7 +25,7 @@ A former login role for recording attendance. Dropped from the model by ADR-0007
 _Avoid:_ using it for new assignments.
 
 **Approver**:
-A built-in login role for users assigned as a holder of an approval step.
+A user holding the APPROVER login role. An Approver is a candidate for an approval step; being a candidate is not the same as holding one — see Approval Step Holder.
 _Avoid:_ approver type names such as Dean or OSA as roles.
 
 **Club Officer**:
@@ -73,24 +73,16 @@ One presence record for one student at one event.
 _Avoid:_ check-in row, attendance attempt.
 
 **Attendance Status**:
-The presence state of an attendance record, `PRESENT`. A present record has `markedPresentAt`; absence is simply the lack of a presence record. A walk-in is a separate, audited exception recorded by an `OFFICER` or `ADMIN` account, with its own reason. It is NOT authorized through an event approval step — that governs Event publish only.
+The presence state of an attendance record, `PRESENT`. A present record has `markedPresentAt`; absence is simply the lack of a presence record. A walk-in is a presence row flagged `isWalkIn = true`, audited separately from the registered-presence count and recorded with its own reason by an `OFFICER` or `ADMIN` account. It is NOT authorized through an event approval step — that governs Event publish only.
 _Avoid:_ registration status.
-
-**Approved Walk-in**:
-The authority-backed decision permitting a walk-in, audited separately from the attendance presence record.
-_Avoid:_ inferred walk-in, implicit exception.
-
-**Operator**:
-The pairing of acting user and active approval authority for an attendance or walk-in action.
-_Avoid:_ actor alone.
 
 **Correction Window (open question)**:
 Whether attendance can later be corrected, under whose authority, within what deadline, and with what audit remains unresolved. The current MVP assumption is no corrections.
 _Avoid:_ update, edit.
 
 **Walk-in**:
-An audited attendance exception for a student who did not register, counted separately from registered attendance.
-_Avoid:_ manual attendance, unofficial attendance.
+An audited attendance exception for a student who did not register: an `Attendance` row with `isWalkIn = true`, a required reason and the recording actor, counted separately from registered attendance and never consuming capacity.
+_Avoid:_ manual attendance, unofficial attendance, a separate walk-in table.
 
 **Important Notice**:
 A notification requiring acknowledgment from each recipient.
@@ -101,7 +93,7 @@ A recipient state of `UNREAD`, `READ`, or `ACKNOWLEDGED`, where acknowledgment i
 _Avoid:_ email delivery status.
 
 **Email Delivery Attempt**:
-A separate per-recipient record, `QUEUED`, `SENT`, or `FAILED`, with reason, attempt count, and timestamps. SENT means the SMTP server accepted the message, not that it was delivered.
+A separate per-recipient record that starts as `QUEUED` and ends as exactly one of `SENT` or `FAILED`, with reason, attempt count, and timestamps. `SENT` means the SMTP server accepted the message, not that it was delivered.
 _Avoid:_ opened, delivered.
 
 **Per-Recipient Delivery Detail**:
@@ -113,7 +105,7 @@ The ordered state machine `DRAFT → PENDING_APPROVAL → (REVISION_REQUESTED | 
 _Avoid:_ event status as free text.
 
 **Approval Step**:
-A configured step in the event approval chain, with an event type label (Council, Dean, OSA, Security), an order position, a condition description, and a required role. Skipping a step is refused.
+A configured step in the event approval chain, with an office (Council, Dean, OSA, Security), an order position, a condition description, and one or more holder users. There is no role field on the step. Skipping a step is refused.
 _Avoid:_ approval stage, review gate.
 
 **Approval Chain**:
@@ -121,8 +113,8 @@ The ordered sequence of `ApprovalStep`s per event, where each step must be appro
 _Avoid:_ approval workflow, gate sequence.
 
 **Approval Step Holder**:
-The user(s) recorded on an approval step as allowed to act for it, set by an Administrator; each reassignment is audited. The permission check is "is the acting user a holder of the current step". Delegation is Phase 2 (ADR-0007).
-_Avoid:_ role alone, permission check alone.
+A user assigned to act for a specific approval step (the holders recorded on that `ApprovalStep`), set by an Administrator; each reassignment is audited. A holder may be an Approver or an OFFICER (the Council step's holder is an OFFICER). The permission check is "is the acting user a holder of the current step". Delegation is Phase 2 (ADR-0007).
+_Avoid:_ role alone, permission check alone, Approver as a synonym for holder.
 
 **Revision Requested**:
 An event state indicating the author must revise and resubmit before re-submission for approval.

@@ -22,7 +22,7 @@ A campus event system needs to manage student registration, staff-assisted atten
 | Registration with confirmation reference | Partial | No `status`, `cancelledAt`, `cancelation` logic, or capacity counting |
 | Attendance with walk-in exception | Partial | Unique rule exists but no `PRESENT`/`ABSENT` status, no walk-in reason, no OFFICER/ADMIN recording check |
 | In-app notification states UNREAD/READ/ACK | Missing | Schema has reads only; no `ACKNOWLEDGED` state, no per-recipient email delivery rows |
-| Email delivery states QUEUED/SENT/FAILED | Missing | No per-recipient delivery attempt table; email conflated with in-app state |
+| Email delivery states QUEUED → SENT|FAILED | Missing | No per-recipient delivery attempt table; email conflated with in-app state |
 | Approval chain data model | Missing | No `ApprovalStep` model (office + holder users); no publish gate; no audit entries for approval decisions |
 | RA 10173 minimum-necessary exposure | Missing | No explicit policy; per-recipient email detail not restricted to administrators |
 | Administrator-only CSV import | Missing | No import path; no self-service CSV upload |
@@ -38,7 +38,7 @@ A campus event system needs to manage student registration, staff-assisted atten
 3. As a STUDENT, I want to re-register for an event I previously cancelled, after a fresh eligibility/window/capacity check, preserving the original confirmation reference.
 4. As an OFFICER or ADMIN, I want to create an IMPORTANT notification so that each recipient must acknowledge it, and the system tracks in-app state (UNREAD → READ → ACKNOWLEDGED).
 5. As a recipient, I want to acknowledge an IMPORTANT notice so that my state changes to ACKNOWLEDGED (which also marks me READ), and I cannot acknowledge a non-IMPORTANT notice.
-6. As a SYSTEM, I want to send an email notification per recipient so that the attempt is recorded as QUEUED/SENT/FAILED with reason and attempt count, and email outcome never alters in-app read/acknowledge state.
+6. As a SYSTEM, I want to send an email notification per recipient so that the attempt starts as QUEUED and ends as exactly one of SENT or FAILED with reason and attempt count, and email outcome never alters in-app read/acknowledge state.
 7. As an ADMIN, I want to view per-recipient email delivery detail so that I can diagnose send failures, but other roles never see this data.
 8. As an OFFICER or ADMIN, I want to mark a student PRESENT at an event so that one presence record exists per student per event, and walk-ins are recorded separately with a reason and an audited recording actor.
 9. As an ADMIN, I want to approve an event through an ordered approval chain (Council → Dean → OSA → Security) so that only PUBLISHED events accept registration and attendance.
@@ -51,12 +51,12 @@ A campus event system needs to manage student registration, staff-assisted atten
 
 - Registration: one row per (eventId, userId); status REGISTERED/CANCELLED; confirmation reference preserved; capacity cap enforced; cancellation refused if attendance exists; re-registration re-runs eligibility/window/capacity.
 - Attendance: `@@unique([eventId, studentId])`; PRESENT record with `markedPresentAt`; walk-in separately audited with reason and authority; never consumes capacity.
-- Notification in-app: UNREAD → READ → ACK (ACK only for IMPORTANT; ACK implies read); per-recipient delivery row QUEUED/SENT/FAILED; email outcome never modifies in-app state.
+- Notification in-app: UNREAD → READ → ACK (ACK only for IMPORTANT; ACK implies read); per-recipient delivery attempt starts QUEUED and ends as exactly one of SENT or FAILED; email outcome never modifies in-app state.
 - Approval chain: Event status DRAFT → PENDING_APPROVAL → (REVISION_REQUESTED → APPROVED → PUBLISHED); only PUBLISHED accepts registration; attendance requires published event inside window; permission = "is the acting user a holder of the current ApprovalStep"; every decision writes audit entry; every reassignment of step holders writes an audit entry; skipping step refused.
 - Email RA 10173: Per-recipient detail Administrator-only; no response or log exposes more personal data than the feature requires.
 - Role gates for registration: STUDENT may register/cancel/re-register; other roles (OFFICER, ADMIN, DEV, APPROVER) are denied on sub-operations.
 - Role gates for attendance: OFFICER or ADMIN may mark PRESENT/walk-in; other roles are denied on sub-operations.
-- Role gates for notification: AUTHORIZED roles (OFFICER, ADMIN) may create/acknowledge notifications; other roles are denied on sub-operations.
+- Role gates for notification: AUTHORIZED roles (OFFICER, ADMIN, DEV) may create/acknowledge notifications and send manual reminders; other roles are denied on sub-operations.
 - Role gates for approval chain: holders of the current `ApprovalStep` (an APPROVER, or an OFFICER for the Council step) may approve/reject/request revision/publish; other roles are denied on sub-operations.
 - Role gates for email: per-recipient delivery detail visible only to ADMIN; other roles are denied on sub-operations.
 - Role gates for CSV import: ADMIN may import; other roles are denied.
@@ -65,15 +65,12 @@ A campus event system needs to manage student registration, staff-assisted atten
 
 ## Phase 2 Deferrals (with reasons)
 
-- **Event status/publish gate**: `Event` status fields (`PENDING_APPROVAL`, `REVISION_REQUESTED`, `APPROVED`, `PUBLISHED`, `CANCELLED`) and the approval-chain Actions will be added in the dedicated in-MVP tickets that also add the `ApprovalStep` data model and UI workflow.
-- **Registration capacity & cancellation**: The one-row-per-student lifecycle and concurrency model are deferred pending the approval-chain ticket, since the publish gate will affect when registration is open.
 - **Attendance correction framework**: The MVP assumes no corrections; correction authority, deadline, and audit semantics are an open question for Phase 2.
 - **QR scanning & in/out presence pair**: QR code scanning and the scan → `PRESENT` record flow are deferred to Phase 2, after the core approval chain and registration are stable.
 - **SMS mock seam**: A mock SMS gateway for test simulation is deferred; SMS is out of the MVP entirely.
 - **Evaluation & telemetry**: Feature evaluation dashboards and effectiveness metrics are deferred to Phase 2 after core flows are production-stable.
-- **Manual reminders**: standalone reminder sends are a checkbox in the notifications ticket (ADR-0007); the automatic registration-window reminder sweep is not built in MVP.
-- **CSV import & RA 10173 compliance**: Administrator-only CSV import and the full minimum-necessary-exposure log/audit policy are deferred to Phase 2 once the core data model is settled.
-- **Evaluation/deferred metrics**: Performance and satisfaction measurement are deferred until after MVP launch.
+- **Step delegation**: delegated authority for an approval step is Phase 2 (ADR-0007).
+- **Email bounce handling**: the `BOUNCED` outcome needs bounce-report webhook infrastructure, so it is out of the MVP (ADR-0007).
 
 ## Approval-Chain Conditions (pending sign-off)
 
@@ -94,11 +91,11 @@ A campus event system needs to manage student registration, staff-assisted atten
 
 - `src/lib/security/rbac.ts` — `can(role, permission)` and `requirePermission(permission)` gates; add `markAttendance` for OFFICER/ADMIN; add approval-chain step-holder checks.
 - `prisma/schema.prisma` — add `EventStatus` enum, `status` field on Event, `ApprovalStep` model with its holder users; migration added when the owning ticket lands.
-- `src/l4/notification-send.ts` — implement `dispatchNotification` author → recipients → AUD-17 transaction; `attemptEmailDelivery` failure isolation.
-- `src/messaging/email-adapter.ts` — transport seam with default SMTP settings; `exactOptionalPropertyTypes` fix for `failWith`.
-- `src/app/api/_lib/operations.ts` — separate `dispatchNotificationOperation` (send path) from read/ack operations.
-- `src/l4/notification-reads.ts` — in-app read/acknowledge with UNREAD/READ/ACKNOWLEDGED states; per-recipient email delivery rows.
-- TODO(#6) markers in `src/l4/cancel-registration.ts` and `test/registration-completion.test.ts` resolve once their direct tests pass.
+- `src/features/notifications/mutations.ts` — `dispatchNotification` author → recipients write; `attemptEmailDelivery` failure isolation.
+- `src/lib/messaging/email.ts` — transport seam with default SMTP settings.
+- `src/features/notifications/actions.ts` — the send path is separated from the read/acknowledge operations; both are Server Actions (`AGENTS.md:56` prefers Server Actions over new REST endpoints for application data).
+- `src/features/notifications/queries.ts` — in-app read/acknowledge with UNREAD/READ/ACKNOWLEDGED states; per-recipient email delivery rows.
+- Registration and cancellation seams are owned by Ticket 7 (`docs/tickets/07-registration.md`).
 
 ## Out of Scope (MVP Excluded)
 

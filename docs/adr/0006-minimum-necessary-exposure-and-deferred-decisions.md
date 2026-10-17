@@ -1,6 +1,6 @@
 # Minimum-necessary exposure and deferred decisions
 
-> **Amended by ADR-0007**: manual reminders are merged into the notifications ticket, `BOUNCED` is removed from the email outcomes, and attendance is recorded by `OFFICER` or `ADMIN` rather than `ATTENDANCE_STAFF`.
+> **Amended by ADR-0007** (simplified roles and approval). Manual reminders are merged into the notifications ticket, `BOUNCED` is removed from the email outcomes, and attendance is recorded by `OFFICER` or `ADMIN` rather than `ATTENDANCE_STAFF`.
 
 ## RA 10173: minimum-necessary exposure
 
@@ -10,7 +10,7 @@ Rejected alternative: exposing full delivery status (opened/delivered) to all au
 
 ## Administrator-only CSV import with no self-service
 
-CSV import of student records is a privileged operation restricted to users with the `ADMIN` role (or `DEV` in exceptional cases). No consumer-facing or self-service upload interface exists in the MVP. The import path writes audit entries (actor, time, row count, errors) and refuses to overwrite existing records without explicit consent.
+CSV import of student records is a privileged operation restricted to the `ADMIN` role — there is no DEV exception. No consumer-facing or self-service upload interface exists in the MVP. The import path writes audit entries (actor, time, row count, errors); existing emails are skipped and reported, and are never changed or overwritten.
 
 Rejected alternative: allowing any authenticated user to import CSV data, which would violate the minimum-necessary-exposure principle and create data-integrity risk.
 

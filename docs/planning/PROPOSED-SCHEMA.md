@@ -24,12 +24,19 @@ enum EventStatus {
 ### 2. New model: `ApprovalStep` (with its holder users)
 
 ```prisma
+enum ApprovalOffice {
+  COUNCIL
+  DEAN
+  OSA
+  SECURITY
+}
+
 model ApprovalStep {
-  id          String   @id @default(cuid())
-  office      String   // "Council", "Dean", "OSA", "Security"
-  stepOrder   Int      // ordinal position in the chain
-  condition   String   // free-form condition description (pending sign-off)
-  isMandatory Boolean  @default(true)
+  id          String         @id @default(cuid())
+  office      ApprovalOffice // closed set of offices
+  stepOrder   Int            // ordinal position in the chain
+  condition   String         // free-form condition description (pending sign-off)
+  isMandatory Boolean        @default(true)
   holders     ApprovalStepHolder[]
 }
 
@@ -95,6 +102,6 @@ These changes were deferred because:
 3. Prisma migration would require a data-seed script and migration file, which is a separate
    operational step beyond the design-decision scope.
 
-These are recorded as "not applied, no migration" so that ticket 6 (notification upgrade) and
-any future approval-chain ticket can reference the settled design intent without assuming the
+These are recorded as "not applied, no migration" so that ticket 9 (notification upgrade) and
+ticket 5 (approval chain) can reference the settled design intent without assuming the
 schema is already live.

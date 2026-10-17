@@ -1,9 +1,13 @@
 # Access roles and approval authority
 
-> **Superseded in part by ADR-0007** (simplified roles and approval). Changed: `ATTENDANCE_STAFF` is dropped from the model (deprecated, unused; `markAttendance` = OFFICER|ADMIN) and `ApprovalAuthority` is replaced by an `ApprovalStep` that stores its holder users. `APPROVER` remains the only new role, and every guard here stays in force.
+> **Amended by ADR-0007** (simplified roles and approval). `ATTENDANCE_STAFF` is dropped from the model, and `ApprovalAuthority` is replaced by an `ApprovalStep` that stores its holder users. `APPROVER` remains the only added login role. The body below states the current model.
 
-Keep the existing built-in login roles as business roles: STUDENT, OFFICER, ADMIN, and DEV. Add exactly two login roles: ATTENDANCE_STAFF and APPROVER. Club Officers are never users; their participation is recorded as request context. Council, Dean, OSA, Security, and similar approval functions are represented as data through ApprovalAuthority records assigned to an OFFICER or APPROVER user, rather than as additional login roles. The role check establishes candidate status; the operational approval check is whether the user has the active ApprovalAuthority required for the step.
+Business login roles are STUDENT, OFFICER, ADMIN, DEV and APPROVER. Club Officers are never users; their participation is recorded as request context. Council, Dean, OSA, Security and similar approval functions are represented as data through one `ApprovalStep` per office, each carrying the user(s) who hold it, rather than as additional login roles. The role check establishes that a user may act at all; the operational approval check is whether the acting user is a holder of the current step.
 
-DEV remains an administrative support role for operation and maintenance, not a business approval or reporting role. The current permission map is unchanged at baseline: manageUsers is ADMIN or DEV; sendNotifications is OFFICER, ADMIN, or DEV; Attendance Staff may mark attendance in addition to ADMIN.
+`ATTENDANCE_STAFF` was added by an earlier decision and is now **deprecated and unused**: the enum value remains only because Postgres cannot remove an enum value additively, it has no assignment path and no dropdown entry, and `markAttendance` is held by OFFICER and ADMIN (ADR-0007).
 
-Relevant settled positions: Club Officer has no login; Approver is an office account (delegation moved to Phase 2 by ADR-0007); only one Role can be held by one user because the enum allows one role per user.
+DEV remains an administrative support role for operation and maintenance, not a business approval role. Permission map: `manageUsers` is ADMIN or DEV; `sendNotifications` is OFFICER, ADMIN or DEV; `markAttendance` is OFFICER or ADMIN.
+
+Relevant settled positions: Club Officer has no login; an Approver is a user holding the APPROVER role; only one Role can be held by one user because the enum allows one role per user.
+
+Rejected alternatives: a login role per approval office (Dean, OSA, Security), which would multiply roles for data that belongs in `ApprovalStep`; and an invented "Auditor" role, which no operation requires.
