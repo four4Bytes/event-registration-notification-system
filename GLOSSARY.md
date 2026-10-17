@@ -20,8 +20,8 @@ _Avoid:_ Admin, DEV.
 A technical support login role with operational access to run and maintain the system. It is not a business role in approvals or reports.
 _Avoid:_ superuser concept.
 
-**Attendance Staff** (deprecated):
-A former login role for recording attendance. Dropped from the model by ADR-0007: no assignment path, no dropdown entry, and `markAttendance` is held by OFFICER and ADMIN. The enum value remains only because Postgres cannot remove an enum value additively.
+**Attendance Staff** (removed):
+A former login role for recording attendance. Removed from the model by ADR-0007: no `ATTENDANCE_STAFF` enum value exists, there is no assignment path and no dropdown entry, and `markAttendance` is held by OFFICER and ADMIN.
 _Avoid:_ using it for new assignments.
 
 **Approver**:
