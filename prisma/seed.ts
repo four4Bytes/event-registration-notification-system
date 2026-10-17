@@ -2,14 +2,23 @@
  * Demo seed: one user per login role, plus a club, an event, one attendance
  * record and one notice. Idempotent, so it can be re-run safely.
  *
- * Run with `pnpm prisma:seed` (against `DATABASE_URL`).
+ * Run with `pnpm prisma:seed` (against `DATABASE_URL`). Refuses to run in
+ * production, and against a non-local host unless `ALLOW_SEED=true`.
  */
 import { PrismaPg } from "@prisma/adapter-pg";
 import { config } from "dotenv";
 
 import { PrismaClient } from "@/generated/prisma/client";
+import { getEnvBoolean } from "@/lib/infra/env";
+import { assertSeedAllowed } from "@/lib/infra/seed-guard";
 
 config();
+
+assertSeedAllowed({
+  nodeEnv: process.env.NODE_ENV,
+  databaseUrl: process.env.DATABASE_URL ?? "",
+  allowSeed: getEnvBoolean("ALLOW_SEED"),
+});
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" }),
