@@ -24,7 +24,7 @@ interface UsersManagementProps {
   initialRows: UserManagementRow[];
 }
 
-const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN, Role.ATTENDANCE_STAFF, Role.APPROVER];
+const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN, Role.APPROVER];
 type AssignableRole = (typeof roles)[number];
 
 export function UsersManagement({ initialRows }: UsersManagementProps) {

@@ -15,7 +15,7 @@ import { createFieldValidator, requiredString } from "@/lib/validation/form-util
 
 import styles from "./AddUserModal.module.css";
 
-const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN, Role.ATTENDANCE_STAFF, Role.APPROVER];
+const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN, Role.APPROVER];
 type AssignableRole = (typeof roles)[number];
 
 interface AddUserModalProps {

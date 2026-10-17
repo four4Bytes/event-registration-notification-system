@@ -7,7 +7,6 @@ export const AssignableRoleSchema = z.enum([
   Role.STUDENT,
   Role.OFFICER,
   Role.ADMIN,
-  Role.ATTENDANCE_STAFF,
   Role.APPROVER,
 ]);
 

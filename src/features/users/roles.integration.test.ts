@@ -13,16 +13,12 @@ describe("role enum migration", () => {
     await resetDatabase();
   });
 
-  it("stores and returns ATTENDANCE_STAFF users and APPROVER assignments", async () => {
+  it("stores OFFICER users and APPROVER assignments, and the Role enum no longer has ATTENDANCE_STAFF", async () => {
     const admin = await prisma.user.create({
       data: { email: "admin@acdeducation.com", name: "Admin", role: "ADMIN" },
     });
-    const staff = await prisma.user.create({
-      data: {
-        email: "staff@acdeducation.com",
-        name: "Attendance Staff",
-        role: "ATTENDANCE_STAFF",
-      },
+    const officer = await prisma.user.create({
+      data: { email: "officer@acdeducation.com", name: "Officer", role: "OFFICER" },
     });
     const assignment = await prisma.pendingRoleAssignment.create({
       data: {
@@ -33,13 +29,18 @@ describe("role enum migration", () => {
     });
 
     await expect(
-      prisma.user.findUnique({ where: { id: staff.id }, select: { role: true } }),
-    ).resolves.toEqual({ role: "ATTENDANCE_STAFF" });
+      prisma.user.findUnique({ where: { id: officer.id }, select: { role: true } }),
+    ).resolves.toEqual({ role: "OFFICER" });
     await expect(
       prisma.pendingRoleAssignment.findUnique({
         where: { id: assignment.id },
         select: { role: true },
       }),
     ).resolves.toEqual({ role: "APPROVER" });
+
+    await expect(prisma.$queryRawUnsafe(`SELECT 'APPROVER'::"Role"`)).resolves.toBeDefined();
+    await expect(prisma.$queryRawUnsafe(`SELECT 'ATTENDANCE_STAFF'::"Role"`)).rejects.toThrow(
+      /invalid input value for enum/,
+    );
   });
 });
