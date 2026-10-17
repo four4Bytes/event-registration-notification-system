@@ -4,6 +4,7 @@ import Google from "next-auth/providers/google";
 
 import { getAuthAdapterClient } from "@/features/users/mutations";
 import { Role } from "@/generated/prisma/browser";
+import { isDevLoginEnabled } from "@/lib/infra/dev-auth";
 import { getOptionalEnvVar, getRequiredEnvVar } from "@/lib/infra/env";
 
 const schoolDomain = "@acdeducation.com";
@@ -19,16 +20,29 @@ const schoolDomain = "@acdeducation.com";
  * Exports the route `handlers`, `signIn`/`signOut` helpers, and the `auth()`
  * session getter.
  */
+const googleCredentials = {
+  clientId: getOptionalEnvVar("AUTH_GOOGLE_ID", ""),
+  clientSecret: getOptionalEnvVar("AUTH_GOOGLE_SECRET", ""),
+};
+const hasGoogleCredentials = Boolean(googleCredentials.clientId && googleCredentials.clientSecret);
+
+// Fail early on missing credentials, unless the development-only sign-in
+// (ADR-0008) is enabled, in which case Google is simply not registered.
+if (!hasGoogleCredentials && !isDevLoginEnabled()) {
+  getRequiredEnvVar("AUTH_GOOGLE_ID");
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(getAuthAdapterClient()),
-  providers: [
-    Google({
-      clientId: getRequiredEnvVar("AUTH_GOOGLE_ID"),
-      clientSecret: getRequiredEnvVar("AUTH_GOOGLE_SECRET"),
-      // Bypasses the OAuthAccountNotLinked block dynamically in both dev and prod environment
-      allowDangerousEmailAccountLinking: true,
-    }),
-  ],
+  providers: hasGoogleCredentials
+    ? [
+        Google({
+          ...googleCredentials,
+          // Bypasses the OAuthAccountNotLinked block dynamically in both dev and prod environment
+          allowDangerousEmailAccountLinking: true,
+        }),
+      ]
+    : [],
   session: {
     strategy: "database",
   },
