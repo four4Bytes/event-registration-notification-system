@@ -1,6 +1,8 @@
 import { Role } from "@/generated/prisma/browser";
 
-export type Permission = "manageUsers" | "sendNotifications" | "markAttendance";
+export const PERMISSIONS = ["manageUsers", "sendNotifications", "markAttendance"] as const;
+
+export type Permission = (typeof PERMISSIONS)[number];
 
 export function can(role: Role, permission: Permission): boolean {
   if (permission === "manageUsers") return role === Role.ADMIN || role === Role.DEV;

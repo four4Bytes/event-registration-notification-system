@@ -14,8 +14,8 @@ import {
 } from "@/features/users/actions";
 import { AddUserModal } from "@/features/users/components/AddUserModal/AddUserModal";
 import { EditRoleModal } from "@/features/users/components/EditRoleModal/EditRoleModal";
+import { ASSIGNABLE_ROLES } from "@/features/users/constants";
 import type { UserManagementRow } from "@/features/users/queries";
-import { Role } from "@/generated/prisma/browser";
 import { toastActionError, toastError, toastSuccess } from "@/lib/hooks/toast-utils";
 
 import styles from "./UsersManagement.module.css";
@@ -24,8 +24,7 @@ interface UsersManagementProps {
   initialRows: UserManagementRow[];
 }
 
-const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN, Role.APPROVER];
-type AssignableRole = (typeof roles)[number];
+type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
 export function UsersManagement({ initialRows }: UsersManagementProps) {
   const [rows, setRows] = useState(initialRows);
@@ -153,7 +152,7 @@ export function UsersManagement({ initialRows }: UsersManagementProps) {
         </table>
       </div>
       <AddUserModal isOpen={addOpen} onOpenChange={setAddOpen} onSuccess={() => void refresh()} />
-      {roleRow && roles.includes(roleRow.role as AssignableRole) && (
+      {roleRow && ASSIGNABLE_ROLES.includes(roleRow.role as AssignableRole) && (
         <EditRoleModal
           userId={roleRow.id}
           userEmail={roleRow.email}

@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal/Modal";
 import { Select, SelectItem } from "@/components/ui/Select/Select";
 import { TextField } from "@/components/ui/TextField/TextField";
 import { addPendingUserAction } from "@/features/users/actions";
+import { ASSIGNABLE_ROLES } from "@/features/users/constants";
 import { AddPendingUserSchema } from "@/features/users/schemas";
 import { Role } from "@/generated/prisma/browser";
 import { useModalForm } from "@/lib/hooks/useModalForm";
@@ -15,8 +16,7 @@ import { createFieldValidator, requiredString } from "@/lib/validation/form-util
 
 import styles from "./AddUserModal.module.css";
 
-const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN, Role.APPROVER];
-type AssignableRole = (typeof roles)[number];
+type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -67,12 +67,12 @@ export function AddUserModal({ isOpen, onOpenChange, onSuccess }: AddUserModalPr
             value={role}
             onChange={(value) => {
               const selectedRole = String(value) as AssignableRole;
-              if (roles.includes(selectedRole)) setRole(selectedRole);
+              if (ASSIGNABLE_ROLES.includes(selectedRole)) setRole(selectedRole);
             }}
             validate={createFieldValidator(AddPendingUserSchema.shape.role)}
             isDisabled={isPending}
           >
-            {roles.map((item) => (
+            {ASSIGNABLE_ROLES.map((item) => (
               <SelectItem key={item} id={item}>
                 {item}
               </SelectItem>

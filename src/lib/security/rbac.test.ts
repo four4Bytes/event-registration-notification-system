@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import { Role } from "@/generated/prisma/browser";
-import { can, type Permission } from "@/lib/security/rbac";
+import { can, PERMISSIONS, type Permission } from "@/lib/security/rbac";
 
-const permissions: Permission[] = ["manageUsers", "sendNotifications", "markAttendance"];
+const roles = Object.values(Role);
 
 const matrix: Array<{ role: Role; permission: Permission; expected: boolean }> = [
   { role: Role.STUDENT, permission: "manageUsers", expected: false },
@@ -30,14 +30,14 @@ describe("can", () => {
 
   it("covers every role against every permission, denied cases included", () => {
     const covered = new Set(matrix.map(({ role, permission }) => `${role}:${permission}`));
-    for (const role of Object.values(Role)) {
-      for (const permission of permissions) {
+    for (const role of roles) {
+      for (const permission of PERMISSIONS) {
         expect(covered.has(`${role}:${permission}`)).toBe(true);
       }
     }
-    expect(matrix).toHaveLength(Object.values(Role).length * permissions.length);
+    expect(matrix).toHaveLength(roles.length * PERMISSIONS.length);
 
-    for (const permission of permissions) {
+    for (const permission of PERMISSIONS) {
       const denied = matrix.filter((row) => row.permission === permission && !row.expected);
       expect(denied.length).toBeGreaterThan(0);
     }
