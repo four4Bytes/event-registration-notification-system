@@ -7,6 +7,7 @@ import { Role } from "@/generated/prisma/browser";
 import { isDevLoginEnabled } from "@/lib/infra/dev-auth";
 import { getOptionalEnvVar } from "@/lib/infra/env";
 import { getGoogleCredentials } from "@/lib/infra/google-credentials";
+import { SESSION_MAX_AGE_SECONDS } from "@/lib/infra/session";
 
 const schoolDomain = "@acdeducation.com";
 
@@ -37,6 +38,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     : [],
   session: {
     strategy: "database",
+    maxAge: SESSION_MAX_AGE_SECONDS,
   },
   pages: {
     signIn: "/sign-in",

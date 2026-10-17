@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 
 import { getAuthAdapterClient } from "@/features/users/mutations";
 import { isDevLoginEnabled } from "@/lib/infra/dev-auth";
+import { SESSION_MAX_AGE_SECONDS } from "@/lib/infra/session";
 
 /** Cookie name Auth.js uses for database sessions over http (@auth/core `defaultCookies`). */
 const SESSION_COOKIE = "authjs.session-token";
-const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
 
 /**
  * Development-only sign-in: creates a real database session for an existing,
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   }
 
   const sessionToken = crypto.randomUUID();
-  const expires = new Date(Date.now() + SESSION_MAX_AGE_MS);
+  const expires = new Date(Date.now() + SESSION_MAX_AGE_SECONDS * 1000);
   await getAuthAdapterClient().session.create({
     data: { sessionToken, userId: user.id, expires },
   });
