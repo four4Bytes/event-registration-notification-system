@@ -12,7 +12,7 @@ Single presence record per student per event; walk-ins are `Attendance` rows wit
 
 1. [ ] `@@unique([eventId, studentId])` kept; PRESENT rows with `markedPresentAt`; absence is the lack of a row.
 2. [ ] A walk-in is an `Attendance` row with `isWalkIn = true` for a student without a registration: never consumes capacity, counted separately, requires a reason and a recording actor, is audited separately from presence, and each writes an audit entry.
-3. [ ] Only REGISTERED students get REGULAR rows.
+3. [ ] Only REGISTERED students get non-walk-in (regular) presence rows.
 4. [ ] A student who already has an attendance row for the event cannot register or re-register, so the `(eventId, studentId)` unique rule never breaks (ADR-0003).
 5. [ ] Walk-ins counted separately from registered attendance in queries.
 6. [ ] Authentication, suspended/inactive refusal, and a role gate tested for each denied role (OFFICER/ADMIN mark PRESENT and walk-ins; students view their own).

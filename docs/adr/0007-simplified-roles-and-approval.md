@@ -1,6 +1,6 @@
 # Simplified roles and approval
 
-Amends ADRs 0001 (access roles and approval authority), 0003 (attendance walk-in authority), 0004 (email delivery outcomes), 0005 (approval-chain model) and 0006 (deferred decisions). Every security and privacy guard from those ADRs stays in force; only the shapes below change.
+Amends ADRs 0001 (access roles and approval authority), 0002 (registration lifecycle), 0003 (attendance walk-in authority), 0004 (email delivery outcomes), 0005 (approval-chain model) and 0006 (deferred decisions). Every security and privacy guard from those ADRs stays in force; only the shapes below change.
 
 ## 1. Drop `ATTENDANCE_STAFF` from the model
 
@@ -17,7 +17,7 @@ Consequence: Ticket 2 needs a follow-up correction (recorded in `docs/tickets/02
 
 ## 2. Keep `APPROVER`; one model instead of two
 
-`APPROVER` stays the only new login role — it is an office account distinct from ADMIN, and it keeps approval decisions attributable to an office rather than to general administration.
+`APPROVER` stays the only new login role — a login role distinct from ADMIN, so an approval decision is attributable to a named approver rather than to general administration. The office lives on the approval step, not on the role: a step's holder may be an APPROVER or an OFFICER.
 
 `ApprovalAuthority` and the delegation ticket are replaced by a single `ApprovalStep` that stores:
 

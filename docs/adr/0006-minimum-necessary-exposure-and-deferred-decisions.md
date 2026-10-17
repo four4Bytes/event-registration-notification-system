@@ -1,6 +1,6 @@
 # Minimum-necessary exposure and deferred decisions
 
-> **Amended by ADR-0007** (simplified roles and approval). Manual reminders are merged into the notifications ticket, `BOUNCED` is removed from the email outcomes, and attendance is recorded by `OFFICER` or `ADMIN` rather than `ATTENDANCE_STAFF`.
+> **Amended by ADR-0007** (simplified roles and approval). Manual reminders are merged into the notifications ticket, `BOUNCED` is removed from the email outcomes, and attendance is recorded by `OFFICER` or `ADMIN` rather than `ATTENDANCE_STAFF`. The body below states the current model.
 
 ## RA 10173: minimum-necessary exposure
 
@@ -22,7 +22,7 @@ Rejected alternative: including a production SMS gateway in the MVP, which would
 
 ## Manual reminders
 
-Manual reminder notifications may be sent outside the automated approval/window flow, initiated by an `OFFICER` or `ADMIN` and built as a checkbox in the notifications ticket (ADR-0007). These are not part of the automatic registration-window reminder logic and are tracked as standalone notification sends with their own email delivery attempt.
+Manual reminder notifications may be sent outside the automated approval/window flow, initiated by an `OFFICER`, `ADMIN` or `DEV` (the `sendNotifications` permission) and built as a checkbox in the notifications ticket (ADR-0007). These are not part of the automatic registration-window reminder logic and are tracked as standalone notification sends with their own email delivery attempt.
 
 Rejected alternative: bundling reminder logic into the automatic registration-window flow, which would conflate two distinct responsibilities and complicate the email-failure-isolation model.
 

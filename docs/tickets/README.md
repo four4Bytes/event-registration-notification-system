@@ -8,20 +8,20 @@ ADR-0007 simplified roles and approval: `ATTENDANCE_STAFF` is dropped (deprecate
 
 ## Dependency table
 
-| Ticket | Needs | Schema | Label |
-|---|---|---|---|
-| 1 test setup | — | no | ready-for-agent (committed `c48b5ef`) |
-| 2 roles + permission map | 1 | **yes** | ready-for-agent (committed `25078a9`; ADR-0007 follow-up outstanding, listed in the ticket) |
-| 3 audit log | 1 | **yes** | ready-for-agent |
-| 4 event status + publish | 2, 3 | **yes** | built on assumptions, pending sign-off |
-| 5 approval chain | 4 | **yes** | built on assumptions, pending sign-off |
-| 6 eligibility + fields | 2, 4 | **yes** | ready-for-agent |
-| 7 registration | 4, 6 | **yes** | ready-for-agent |
-| 8 attendance + walk-ins | 7 | **yes** | ready-for-agent |
-| 9 notifications + reminders | 2, 3, 7 | **yes** | ready-for-agent |
-| 10 officer contacts | 4, 9 | **yes** | built on assumptions, pending sign-off |
-| 11 CSV import | 2, 3 | no | ready-for-agent |
-| 12 reports | 5, 7, 8, 9 | no | ready-for-agent |
+| Ticket                      | Needs      | Schema  | Label                                                                                       |
+| --------------------------- | ---------- | ------- | ------------------------------------------------------------------------------------------- |
+| 1 test setup                | —          | no      | ready-for-agent (committed `c48b5ef`)                                                       |
+| 2 roles + permission map    | 1          | **yes** | ready-for-agent (committed `25078a9`; ADR-0007 follow-up outstanding, listed in the ticket) |
+| 3 audit log                 | 1          | **yes** | ready-for-agent                                                                             |
+| 4 event status + publish    | 2, 3       | **yes** | built on assumptions, pending sign-off                                                      |
+| 5 approval chain            | 4          | **yes** | built on assumptions, pending sign-off                                                      |
+| 6 eligibility + fields      | 2, 4       | **yes** | ready-for-agent                                                                             |
+| 7 registration              | 4, 6       | **yes** | ready-for-agent                                                                             |
+| 8 attendance + walk-ins     | 7          | **yes** | ready-for-agent                                                                             |
+| 9 notifications + reminders | 2, 3, 7    | **yes** | ready-for-agent                                                                             |
+| 10 officer contacts         | 4, 9       | **yes** | built on assumptions, pending sign-off                                                      |
+| 11 CSV import               | 2, 3       | no      | ready-for-agent                                                                             |
+| 12 reports                  | 5, 7, 8, 9 | no      | ready-for-agent                                                                             |
 
 ## Serialized schema order (one migration at a time, numeric)
 
@@ -34,13 +34,13 @@ ADR-0007 simplified roles and approval: `ATTENDANCE_STAFF` is dropped (deprecate
 
 ## Merged or dropped by ADR-0007
 
-| Former ticket | Now |
-|---|---|
-| 6 delegation | Phase 2 |
-| 9 presence + 10 walk-ins | Ticket 8, one migration |
-| 13 manual reminders | Ticket 9, checkbox 4 |
-| 12 officer contacts (own model) | Ticket 10, a `Club` field |
-| 16 REST + OpenAPI | dropped (`AGENTS.md:56` prefers Server Actions; the per-route 401/403 tests go with it) |
+| Former ticket                   | Now                                                                                     |
+| ------------------------------- | --------------------------------------------------------------------------------------- |
+| 6 delegation                    | Phase 2                                                                                 |
+| 9 presence + 10 walk-ins        | Ticket 8, one migration                                                                 |
+| 13 manual reminders             | Ticket 9, checkbox 4                                                                    |
+| 12 officer contacts (own model) | Ticket 10, a `Club` field                                                               |
+| 16 REST + OpenAPI               | dropped (`AGENTS.md:56` prefers Server Actions; the per-route 401/403 tests go with it) |
 
 ## Phase 2
 

@@ -10,4 +10,4 @@ DEV remains an administrative support role for operation and maintenance, not a 
 
 Relevant settled positions: Club Officer has no login; an Approver is a user holding the APPROVER role; only one Role can be held by one user because the enum allows one role per user.
 
-Rejected alternatives: a login role per approval office (Dean, OSA, Security), which would multiply roles for data that belongs in `ApprovalStep`; and an invented "Auditor" role, which no operation requires.
+Rejected alternatives: a login role per approval office (Dean, OSA, Security), which would multiply roles for data that belongs in `ApprovalStep`.

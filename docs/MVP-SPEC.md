@@ -16,20 +16,20 @@ A campus event system needs to manage student registration, staff-assisted atten
 
 ## Gaps Relative to the MVP Spec
 
-| Feature | Status | Notes |
-|---|---|---|
-| Event lifecycle & approval chain | Partial | Event has `DRAFT` status only; no publish gate, no `ApprovalStep` model |
-| Registration with confirmation reference | Partial | No `status`, `cancelledAt`, `cancelation` logic, or capacity counting |
-| Attendance with walk-in exception | Partial | Unique rule exists but no `PRESENT`/`ABSENT` status, no walk-in reason, no OFFICER/ADMIN recording check |
-| In-app notification states UNREAD/READ/ACK | Missing | Schema has reads only; no `ACKNOWLEDGED` state, no per-recipient email delivery rows |
-| Email delivery states QUEUED → SENT|FAILED | Missing | No per-recipient delivery attempt table; email conflated with in-app state |
-| Approval chain data model | Missing | No `ApprovalStep` model (office + holder users); no publish gate; no audit entries for approval decisions |
-| RA 10173 minimum-necessary exposure | Missing | No explicit policy; per-recipient email detail not restricted to administrators |
-| Administrator-only CSV import | Missing | No import path; no self-service CSV upload |
-| SMS out of MVP | Missing | No gateway integration; mock seam not built |
-| Manual reminders | Missing | No reminder notification flow; built as a checkbox in the notifications ticket (ADR-0007) |
-| QR scanning / in-out presence | Deferred Phase 2 | Not in MVP; single‑`@@unique` presence rule only |
-| Evaluation/deferred metrics | Deferred Phase 2 | No telemetry dashboard or effectiveness measurement |
+| Feature                                    | Status           | Notes                                                                                                     |
+| ------------------------------------------ | ---------------- | --------------------------------------------------------------------------------------------------------- |
+| Event lifecycle & approval chain           | Partial          | Event has `DRAFT` status only; no publish gate, no `ApprovalStep` model                                   |
+| Registration with confirmation reference   | Partial          | No `status`, `cancelledAt`, `cancelation` logic, or capacity counting                                     |
+| Attendance with walk-in exception          | Partial          | Unique rule exists but no `PRESENT`/`ABSENT` status, no walk-in reason, no OFFICER/ADMIN recording check  |
+| In-app notification states UNREAD/READ/ACK | Missing          | Schema has reads only; no `ACKNOWLEDGED` state, no per-recipient email delivery rows                      |
+| Email delivery states QUEUED → SENT/FAILED | Missing          | No per-recipient delivery attempt table; email conflated with in-app state                                |
+| Approval chain data model                  | Missing          | No `ApprovalStep` model (office + holder users); no publish gate; no audit entries for approval decisions |
+| RA 10173 minimum-necessary exposure        | Missing          | No explicit policy; per-recipient email detail not restricted to administrators                           |
+| Administrator-only CSV import              | Missing          | No import path; no self-service CSV upload                                                                |
+| SMS out of MVP                             | Missing          | No gateway integration; mock seam not built                                                               |
+| Manual reminders                           | Missing          | No reminder notification flow; built as a checkbox in the notifications ticket (ADR-0007)                 |
+| QR scanning / in-out presence              | Deferred Phase 2 | Not in MVP; single‑`@@unique` presence rule only                                                          |
+| Evaluation/deferred metrics                | Deferred Phase 2 | No telemetry dashboard or effectiveness measurement                                                       |
 
 ## User Stories
 
@@ -43,14 +43,14 @@ A campus event system needs to manage student registration, staff-assisted atten
 8. As an OFFICER or ADMIN, I want to mark a student PRESENT at an event so that one presence record exists per student per event, and walk-ins are recorded separately with a reason and an audited recording actor.
 9. As an ADMIN, I want to approve an event through an ordered approval chain (Council → Dean → OSA → Security) so that only PUBLISHED events accept registration and attendance.
 10. As a user with a suspended or inactive account, I am refused on every notification, registration, attendance, and approval operation.
-11. As an ADMIN, I want to import student records from CSV so that the system writes audit entries (actor, time, row count, errors) and refuses to overwrite existing records without explicit consent.
+11. As an ADMIN, I want to import student records from CSV so that the system writes audit entries (actor, time, row count, errors), skips existing emails and reports them, and never changes or overwrites existing records.
 12. As a DEV, I want a mock SMS seam so that tests can simulate message sends without contacting a real gateway.
 13. As a system, I want to notify club officers on event publish so that each published event triggers an email with event details and a mechanics checklist to the club officer's email address on the `Club` officer-contact field (ADR-0007); email failure never blocks publishing, and the Council can see which officers were sent the email via an admin view.
 
 ## Acceptance Criteria (Vitest test targets)
 
-- Registration: one row per (eventId, userId); status REGISTERED/CANCELLED; confirmation reference preserved; capacity cap enforced; cancellation refused if attendance exists; re-registration re-runs eligibility/window/capacity.
-- Attendance: `@@unique([eventId, studentId])`; PRESENT record with `markedPresentAt`; walk-in separately audited with reason and authority; never consumes capacity.
+- Registration: one row per (eventId, userId); status REGISTERED/CANCELLED; confirmation reference preserved; capacity cap enforced; cancellation refused if attendance exists; registration and re-registration refused when an attendance row exists; re-registration re-runs eligibility/window/capacity.
+- Attendance: `@@unique([eventId, studentId])`; PRESENT record with `markedPresentAt`; walk-in is a flagged presence row, separately audited with a reason and the recording actor (OFFICER or ADMIN); never consumes capacity.
 - Notification in-app: UNREAD → READ → ACK (ACK only for IMPORTANT; ACK implies read); per-recipient delivery attempt starts QUEUED and ends as exactly one of SENT or FAILED; email outcome never modifies in-app state.
 - Approval chain: Event status DRAFT → PENDING_APPROVAL → (REVISION_REQUESTED → APPROVED → PUBLISHED); only PUBLISHED accepts registration; attendance requires published event inside window; permission = "is the acting user a holder of the current ApprovalStep"; every decision writes audit entry; every reassignment of step holders writes an audit entry; skipping step refused.
 - Email RA 10173: Per-recipient detail Administrator-only; no response or log exposes more personal data than the feature requires.
