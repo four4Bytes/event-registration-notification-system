@@ -1,4 +1,5 @@
 import type { Role } from "@/generated/prisma/browser";
+import { DEMO_ACCOUNTS } from "@/lib/infra/demo-accounts";
 import { prisma } from "@/lib/infra/prisma";
 
 export interface UserManagementRow {
@@ -59,4 +60,13 @@ export async function getUserById(userId: string) {
 
 export async function getClubs() {
   return prisma.club.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } });
+}
+
+// Development-only sign-in list (ADR-0008): only the accounts the seed creates.
+export async function getDevSignInAccounts() {
+  return prisma.user.findMany({
+    where: { email: { in: DEMO_ACCOUNTS.map((account) => account.email) } },
+    select: { email: true, role: true },
+    orderBy: { email: "asc" },
+  });
 }

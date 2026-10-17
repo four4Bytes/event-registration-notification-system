@@ -2,18 +2,13 @@ import Image from "next/image";
 import { Suspense } from "react";
 
 import { SignInForm } from "@/features/auth/components/SignInForm/SignInForm";
+import { getDevSignInAccounts } from "@/features/users/queries";
 import { isDevLoginEnabled } from "@/lib/infra/dev-auth";
-import { prisma } from "@/lib/infra/prisma";
 
 import styles from "./page.module.css";
 
 export default async function SignInPage() {
-  const devUsers = isDevLoginEnabled()
-    ? await prisma.user.findMany({
-        select: { email: true, role: true },
-        orderBy: { email: "asc" },
-      })
-    : [];
+  const devUsers = isDevLoginEnabled() ? await getDevSignInAccounts() : [];
 
   return (
     <main className={styles.page}>
