@@ -36,6 +36,7 @@ model User {
   notificationsSent      Notification[]          @relation("NotificationSender")
   notificationReads      NotificationRead[]
   pendingAssignmentsMade PendingRoleAssignment[] @relation("AssignedBy")
+  auditLogs              AuditLog[]
   accounts               Account[]
   sessions               Session[]
 }
@@ -110,6 +111,20 @@ model NotificationRead {
   readAt         DateTime     @default(now())
 
   @@unique([notificationId, userId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  action     String
+  actorId    String
+  actor      User     @relation(fields: [actorId], references: [id])
+  actorRole  Role
+  details    Json
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
 }
 
 model Account {
