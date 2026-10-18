@@ -11,11 +11,7 @@ const ALLOWED_TRANSITIONS: Record<EventStatus, readonly EventStatus[]> = {
     EventStatus.PUBLISHED,
     EventStatus.CANCELLED,
   ],
-  REVISION_REQUESTED: [
-    EventStatus.PENDING_APPROVAL,
-    EventStatus.PUBLISHED,
-    EventStatus.CANCELLED,
-  ],
+  REVISION_REQUESTED: [EventStatus.PENDING_APPROVAL, EventStatus.PUBLISHED, EventStatus.CANCELLED],
   APPROVED: [EventStatus.PUBLISHED, EventStatus.CANCELLED],
   PUBLISHED: [EventStatus.CANCELLED],
   REJECTED: [],

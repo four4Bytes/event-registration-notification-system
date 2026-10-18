@@ -13,7 +13,7 @@ import { toActionResponse } from "@/lib/security/errors";
 
 import { canTransition } from "./lifecycle";
 import { updateEventStatus } from "./mutations";
-import { getEventStatus, getEvents, type EventListRow } from "./queries";
+import { getEvents, getEventStatus, type EventListRow } from "./queries";
 import { EventIdSchema } from "./schemas";
 
 export async function getEventsAction(): Promise<EventListRow[]> {
