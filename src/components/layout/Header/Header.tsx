@@ -27,6 +27,7 @@ export function Header({ userImage, userName, userRole, initialUnreadCount }: He
   const { toggle } = useSidebar();
 
   const getPageTitle = (path: string) => {
+    if (path.startsWith("/events")) return "Events";
     if (path.startsWith("/notifications")) return "Notifications";
     if (path.startsWith("/admin/users")) return "Manage Users";
     return "";
