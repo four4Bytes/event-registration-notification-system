@@ -21,6 +21,11 @@ const matrix: Array<{ role: Role; permission: Permission; expected: boolean }> =
   { role: Role.ADMIN, permission: "markAttendance", expected: true },
   { role: Role.DEV, permission: "markAttendance", expected: false },
   { role: Role.APPROVER, permission: "markAttendance", expected: false },
+  { role: Role.STUDENT, permission: "publishEvent", expected: false },
+  { role: Role.OFFICER, permission: "publishEvent", expected: true },
+  { role: Role.ADMIN, permission: "publishEvent", expected: true },
+  { role: Role.DEV, permission: "publishEvent", expected: false },
+  { role: Role.APPROVER, permission: "publishEvent", expected: false },
 ];
 
 describe("can", () => {
