@@ -1,6 +1,7 @@
 /**
- * Demo seed: one user per login role, plus a club, an event, one attendance
- * record and one notice. Idempotent, so it can be re-run safely.
+ * Demo seed: one user per login role, plus a club, one event per lifecycle
+ * state, one attendance record and one notice. Idempotent, so it can be re-run
+ * safely.
  *
  * Run with `pnpm prisma:seed` (against `DATABASE_URL`). Refuses to run in
  * production, and against a non-local host unless `ALLOW_SEED=true`.
@@ -8,7 +9,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { config } from "dotenv";
 
-import { Role } from "@/generated/prisma/browser";
+import { EventStatus, Role } from "@/generated/prisma/browser";
 import { PrismaClient } from "@/generated/prisma/client";
 import { DEMO_ACCOUNTS } from "@/lib/infra/demo-accounts";
 import { getEnvBoolean } from "@/lib/infra/env";
@@ -59,20 +60,46 @@ async function main() {
   }
 
   const startAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const event = await prisma.event.upsert({
-    where: { id: "seed-event-open-day" },
-    update: {},
-    create: {
-      id: "seed-event-open-day",
-      title: "Open Day orientation",
-      description: "Seeded demo event.",
-      venue: "Main Auditorium",
-      startAt,
-      endAt: new Date(startAt.getTime() + 2 * 60 * 60 * 1000),
-      clubId: club.id,
-      createdById: adminId,
+  const endAt = new Date(startAt.getTime() + 2 * 60 * 60 * 1000);
+  const demoEvents = [
+    { id: "seed-event-open-day", title: "Open Day orientation", status: EventStatus.PUBLISHED },
+    { id: "seed-event-draft", title: "Quiz night", status: EventStatus.DRAFT },
+    { id: "seed-event-pending", title: "Sports fest", status: EventStatus.PENDING_APPROVAL },
+    {
+      id: "seed-event-revision",
+      title: "Community outreach",
+      status: EventStatus.REVISION_REQUESTED,
     },
-  });
+    { id: "seed-event-approved", title: "Robotics meet", status: EventStatus.APPROVED },
+    { id: "seed-event-rejected", title: "Night fair", status: EventStatus.REJECTED },
+    { id: "seed-event-cancelled", title: "Film screening", status: EventStatus.CANCELLED },
+  ];
+
+  const events = new Map<EventStatus, { id: string; title: string }>();
+  for (const demoEvent of demoEvents) {
+    const record = await prisma.event.upsert({
+      where: { id: demoEvent.id },
+      update: { status: demoEvent.status },
+      create: {
+        id: demoEvent.id,
+        title: demoEvent.title,
+        description: "Seeded demo event.",
+        venue: "Main Auditorium",
+        startAt,
+        endAt,
+        clubId: club.id,
+        createdById: adminId,
+        status: demoEvent.status,
+      },
+      select: { id: true, title: true, status: true },
+    });
+    events.set(record.status, record);
+  }
+
+  const event = events.get(EventStatus.PUBLISHED);
+  if (!event) {
+    throw new Error("Seed needs a PUBLISHED demo event.");
+  }
 
   await prisma.attendance.upsert({
     where: { eventId_studentId: { eventId: event.id, studentId } },
@@ -102,7 +129,10 @@ async function main() {
 
   console.log("Seeded users (sign in as any of these):");
   for (const user of DEMO_ACCOUNTS) console.log(`  ${user.role.padEnd(9)} ${user.email}`);
-  console.log(`Seeded event: ${event.title} (${event.id})`);
+  console.log("Seeded events (one per lifecycle state):");
+  for (const demoEvent of demoEvents) {
+    console.log(`  ${demoEvent.status.padEnd(19)} ${demoEvent.title}`);
+  }
 }
 
 main()
