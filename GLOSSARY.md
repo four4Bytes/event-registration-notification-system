@@ -101,7 +101,7 @@ Email delivery outcome information disclosed only to administrators.
 _Avoid:_ public delivery status.
 
 **Event Lifecycle**:
-The ordered state machine `DRAFT → PENDING_APPROVAL → (REVISION_REQUESTED | APPROVED → PUBLISHED | CANCELLED)` that gates registration and attendance access. Only `PUBLISHED` events accept registration, and attendance requires a published event inside its window.
+The ordered state machine `DRAFT → PENDING_APPROVAL → APPROVED → PUBLISHED`, with `PENDING_APPROVAL → REVISION_REQUESTED → PENDING_APPROVAL` for a resubmission, `PENDING_APPROVAL → REJECTED`, and `→ CANCELLED` from any non-terminal state. Seven states in all; `REJECTED` and `CANCELLED` are terminal. It gates registration and attendance access: only `PUBLISHED` events accept registration, and attendance requires a published event inside its window.
 _Avoid:_ event status as free text.
 
 **Approval Step**:

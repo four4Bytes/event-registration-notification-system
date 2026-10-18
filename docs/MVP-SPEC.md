@@ -7,7 +7,7 @@ A campus event system needs to manage student registration, staff-assisted atten
 ## Existing Repo Building Blocks
 
 - **Google OAuth** with school-domain gate (`@acdeducation.com`), Auth.js v5, NextAuth session
-- **User management**: `Role` enum (STUDENT, OFFICER, ADMIN, DEV, APPROVER; `ATTENDANCE_STAFF` dropped by ADR-0007); `manageUsers` permission = ADMIN | DEV; `sendNotifications` permission = OFFICER | ADMIN | DEV
+- **User management**: `Role` enum (STUDENT, OFFICER, ADMIN, DEV, APPROVER; `ATTENDANCE_STAFF` dropped by ADR-0007); `manageUsers` permission = ADMIN | DEV; `sendNotifications` permission = OFFICER | ADMIN | DEV; `publishEvent` permission = OFFICER | ADMIN (ticket 4's temporary publish path, removed by ticket 5)
 - **Notification send/feed**: Server Actions in `src/features/notifications/` (`actions.ts` / `mutations.ts` / `queries.ts`), mutations `createNotification` / `markNotificationRead`, queries `getNotificationsForUser` / `getUnreadNotificationsForUser`
 - **Attendance unique rule**: `@@unique([eventId, studentId])` one presence record per student per event
 - **Prisma models**: User, Club, Event, Attendance, Notification, NotificationRead, PendingRoleAssignment
@@ -16,21 +16,21 @@ A campus event system needs to manage student registration, staff-assisted atten
 
 ## Gaps Relative to the MVP Spec
 
-| Feature                                    | Status           | Notes                                                                                                     |
-| ------------------------------------------ | ---------------- | --------------------------------------------------------------------------------------------------------- |
-| Event lifecycle & approval chain           | Partial          | Event has `DRAFT` status only; no publish gate, no `ApprovalStep` model                                   |
-| Registration with confirmation reference   | Partial          | No `status`, `cancelledAt`, `cancelation` logic, or capacity counting                                     |
-| Attendance with walk-in exception          | Partial          | Unique rule exists but no `PRESENT`/`ABSENT` status, no walk-in reason, no OFFICER/ADMIN recording check  |
-| In-app notification states UNREAD/READ/ACK | Missing          | Schema has reads only; no `ACKNOWLEDGED` state, no per-recipient email delivery rows                      |
-| Email delivery states QUEUED → SENT/FAILED | Missing          | No per-recipient delivery attempt table; email conflated with in-app state                                |
-| Approval chain data model                  | Missing          | No `ApprovalStep` model (office + holder users); no publish gate; no audit entries for approval decisions |
-| RA 10173 minimum-necessary exposure        | Missing          | No explicit policy; per-recipient email detail not restricted to administrators                           |
-| Administrator-only CSV import              | Missing          | No import path; no self-service CSV upload                                                                |
-| SMS out of MVP                             | Missing          | No gateway integration; mock seam not built                                                               |
-| Manual reminders                           | Missing          | No reminder notification flow; built as a checkbox in the notifications ticket (ADR-0007)                 |
-| QR scanning / in-out presence              | Deferred Phase 2 | Not in MVP; single‑`@@unique` presence rule only                                                          |
-| Evaluation/deferred metrics                | Deferred Phase 2 | No telemetry dashboard or effectiveness measurement                                                       |
-| Audit log append-only (database-level)     | Hardening        | Not a blocker; nothing enforces it in the database: revoke UPDATE/DELETE for the app role, or a trigger   |
+| Feature                                    | Status           | Notes                                                                                                                                                                                                                |
+| ------------------------------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Event lifecycle & approval chain           | Partial          | `EventStatus`, `Event.status` and the seven-state transition table landed in Ticket 4, with a temporary OFFICER/ADMIN `publishEvent`; the `ApprovalStep` chain and holder-based publish are still missing (Ticket 5) |
+| Registration with confirmation reference   | Partial          | No `status`, `cancelledAt`, `cancelation` logic, or capacity counting                                                                                                                                                |
+| Attendance with walk-in exception          | Partial          | Unique rule exists but no `PRESENT`/`ABSENT` status, no walk-in reason, no OFFICER/ADMIN recording check                                                                                                             |
+| In-app notification states UNREAD/READ/ACK | Missing          | Schema has reads only; no `ACKNOWLEDGED` state, no per-recipient email delivery rows                                                                                                                                 |
+| Email delivery states QUEUED → SENT/FAILED | Missing          | No per-recipient delivery attempt table; email conflated with in-app state                                                                                                                                           |
+| Approval chain data model                  | Missing          | No `ApprovalStep` model (office + holder users); publish is a flat OFFICER/ADMIN permission, not holder-based; no audit entries for approval decisions                                                               |
+| RA 10173 minimum-necessary exposure        | Missing          | No explicit policy; per-recipient email detail not restricted to administrators                                                                                                                                      |
+| Administrator-only CSV import              | Missing          | No import path; no self-service CSV upload                                                                                                                                                                           |
+| SMS out of MVP                             | Missing          | No gateway integration; mock seam not built                                                                                                                                                                          |
+| Manual reminders                           | Missing          | No reminder notification flow; built as a checkbox in the notifications ticket (ADR-0007)                                                                                                                            |
+| QR scanning / in-out presence              | Deferred Phase 2 | Not in MVP; single‑`@@unique` presence rule only                                                                                                                                                                     |
+| Evaluation/deferred metrics                | Deferred Phase 2 | No telemetry dashboard or effectiveness measurement                                                                                                                                                                  |
+| Audit log append-only (database-level)     | Hardening        | Not a blocker; nothing enforces it in the database: revoke UPDATE/DELETE for the app role, or a trigger                                                                                                              |
 
 ## User Stories
 
@@ -53,7 +53,7 @@ A campus event system needs to manage student registration, staff-assisted atten
 - Registration: one row per (eventId, userId); status REGISTERED/CANCELLED; confirmation reference preserved; capacity cap enforced; cancellation refused if attendance exists; registration and re-registration refused when an attendance row exists; re-registration re-runs eligibility/window/capacity.
 - Attendance: `@@unique([eventId, studentId])`; PRESENT record with `markedPresentAt`; walk-in is a flagged presence row, separately audited with a reason and the recording actor (OFFICER or ADMIN); never consumes capacity.
 - Notification in-app: UNREAD → READ → ACK (ACK only for IMPORTANT; ACK implies read); per-recipient delivery attempt starts QUEUED and ends as exactly one of SENT or FAILED; email outcome never modifies in-app state.
-- Approval chain: Event status DRAFT → PENDING_APPROVAL → (REVISION_REQUESTED → APPROVED → PUBLISHED); only PUBLISHED accepts registration; attendance requires published event inside window; permission = "is the acting user a holder of the current ApprovalStep"; every decision writes audit entry; every reassignment of step holders writes an audit entry; a holder may be an APPROVER, an OFFICER or an ADMIN, only when assigned; an ADMIN is refused on a step it is not assigned to; approving an event the actor created or submitted is refused; every approval records the approver and their role; skipping step refused.
+- Approval chain: Event status DRAFT → PENDING_APPROVAL → APPROVED → PUBLISHED, with REVISION_REQUESTED (resubmitting to PENDING_APPROVAL), REJECTED and CANCELLED branches; only PUBLISHED accepts registration; attendance requires published event inside window; permission = "is the acting user a holder of the current ApprovalStep"; every decision writes audit entry; every reassignment of step holders writes an audit entry; a holder may be an APPROVER, an OFFICER or an ADMIN, only when assigned; an ADMIN is refused on a step it is not assigned to; approving an event the actor created or submitted is refused; every approval records the approver and their role; skipping step refused.
 - Email RA 10173: Per-recipient detail Administrator-only; no response or log exposes more personal data than the feature requires.
 - Role gates for registration: STUDENT may register/cancel/re-register; other roles (OFFICER, ADMIN, DEV, APPROVER) are denied on sub-operations.
 - Role gates for attendance: OFFICER or ADMIN may mark PRESENT/walk-in; other roles are denied on sub-operations.
@@ -90,7 +90,7 @@ A campus event system needs to manage student registration, staff-assisted atten
 
 ## Implementation Seams (for test writing)
 
-- `src/lib/security/rbac.ts` — `can(role, permission)` and `requirePermission(permission)` gates; add `markAttendance` for OFFICER/ADMIN; add approval-chain step-holder checks.
+- `src/lib/security/rbac.ts` — `can(role, permission)` and `requirePermission(permission)` gates; add `markAttendance` for OFFICER/ADMIN; `publishEvent` for OFFICER/ADMIN (ticket 4, temporary until ticket 5); add approval-chain step-holder checks.
 - `prisma/schema.prisma` — add `EventStatus` enum, `status` field on Event, `ApprovalStep` model with its holder users; migration added when the owning ticket lands.
 - `src/features/notifications/mutations.ts` — `dispatchNotification` author → recipients write; `attemptEmailDelivery` failure isolation.
 - `src/lib/messaging/email.ts` — transport seam with default SMTP settings.

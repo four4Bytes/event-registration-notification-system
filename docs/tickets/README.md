@@ -13,7 +13,7 @@ ADR-0007 simplified roles and approval: `ATTENDANCE_STAFF` is dropped (no enum v
 | 1 test setup                | —          | no      | ready-for-agent (committed `c48b5ef`)                                                       |
 | 2 roles + permission map    | 1          | **yes** | ready-for-agent (committed `25078a9`; ADR-0007 follow-up outstanding, listed in the ticket) |
 | 3 audit log                 | 1          | **yes** | ready-for-agent (committed `d87810a`)                                                       |
-| 4 event status + publish    | 2, 3       | **yes** | built on assumptions, pending sign-off                                                      |
+| 4 event status + publish    | 2, 3       | **yes** | built on assumptions, pending sign-off (committed `fafa400`..`0b722a5`)                     |
 | 5 approval chain            | 4          | **yes** | built on assumptions, pending sign-off                                                      |
 | 6 eligibility + fields      | 2, 4       | **yes** | ready-for-agent                                                                             |
 | 7 registration              | 4, 6       | **yes** | ready-for-agent                                                                             |
