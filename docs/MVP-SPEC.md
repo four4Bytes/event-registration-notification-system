@@ -30,6 +30,7 @@ A campus event system needs to manage student registration, staff-assisted atten
 | Manual reminders                           | Missing          | No reminder notification flow; built as a checkbox in the notifications ticket (ADR-0007)                 |
 | QR scanning / in-out presence              | Deferred Phase 2 | Not in MVP; single‑`@@unique` presence rule only                                                          |
 | Evaluation/deferred metrics                | Deferred Phase 2 | No telemetry dashboard or effectiveness measurement                                                       |
+| Audit log append-only (database-level)     | Hardening        | Not a blocker; nothing enforces it in the database: revoke UPDATE/DELETE for the app role, or a trigger   |
 
 ## User Stories
 

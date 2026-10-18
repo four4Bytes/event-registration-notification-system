@@ -65,7 +65,7 @@ Moving a registration from `CANCELLED` back to `REGISTERED` after a fresh eligib
 _Avoid:_ reopen, retry.
 
 **Audit Entry**:
-Immutable history of registration state changes, including actor, time, and old and new state.
+Immutable history of state changes to registrations, events, approvals and roles, including actor, time, and old and new state.
 _Avoid:_ log, history record.
 
 **Attendance Record**:

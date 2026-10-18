@@ -238,7 +238,7 @@ Do not introduce a new named interface or type alias for trivial object shapes (
 - Named exports only - no default exports, except for Next.js special files (`page.tsx`, `layout.tsx`, `error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx`, `route.tsx` etc.) which require a default export. Use inline `export default function` for these files.
 - PascalCase components/types; camelCase variables/functions/files (component dirs are PascalCase).
 - No inline `//` comments unless explaining a non-obvious decision. TSDoc on `src/lib/` helpers is the explicit exception.
-- Prisma schema: `snake_case` fields, `PascalCase` models/enums.
+- Prisma schema: `camelCase` fields, `PascalCase` models/enums.
 - Keep credentials and server-only environment variables out of client bundles. Never hardcode or commit real secrets; validate required environment variables at an appropriate boundary (`secrets/` holds local secret material and is git-ignored).
 - Update docs when public APIs, behavior, setup, environment variables, or contracts change. Do not manually edit generated files (`src/generated/`, `next-env.d.ts`) unless their documented workflow requires it.
 

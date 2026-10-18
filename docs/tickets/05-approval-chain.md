@@ -19,6 +19,7 @@ Ordered, conditional approval chain as data. One `ApprovalStep` per office (Coun
 7. [ ] An ADMIN is refused on a step it is not assigned to.
 8. [ ] Approving, rejecting or requesting revision on an event the actor created or submitted is refused, even when the actor holds the step.
 9. [ ] Every approval records the approver and their role; every assignment or reassignment of a step's holders writes an audit entry (see also checkbox 3).
+10. [ ] Create `src/test-utils/` with the shared auth mock and database-reset helper, and move the four per-file `resetDatabase` copies (`users/queries`, `users/roles`, `notifications/queries`, `audit/write-audit-log`) plus the hand-built auth mock onto it (`AGENTS.md:230`). The audit copy already diverges — it truncates only `AuditLog` and `User`.
 
 ## Guards
 
