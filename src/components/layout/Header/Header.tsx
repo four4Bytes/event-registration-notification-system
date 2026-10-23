@@ -3,11 +3,13 @@
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { FaBars, FaUser } from "react-icons/fa6";
+import { FaBars, FaBell, FaUser } from "react-icons/fa6";
 
 import { useSidebar } from "@/components/layout/Sidebar/sidebar-context";
 import { Button } from "@/components/ui/Button/Button";
+import { Link } from "@/components/ui/Link/Link";
 import { SignOutButton } from "@/features/auth/components/SignOutButton/SignOutButton";
+import { useUnreadCount } from "@/features/notifications/unread-count-context";
 import { roleLabels } from "@/features/users/constants";
 import type { Role } from "@/generated/prisma/browser";
 
@@ -23,9 +25,16 @@ export function Header({ userImage, userName, userRole }: HeaderProps) {
   const pathname = usePathname();
   const [imgError, setImgError] = useState(false);
   const { toggle } = useSidebar();
+  const { count: unreadCount } = useUnreadCount();
 
   const getPageTitle = (path: string) => {
+    if (path.startsWith("/registrations")) {
+      return path.endsWith("/ticket") ? "Event ticket" : "My Registrations";
+    }
+    if (path.startsWith("/attendance")) return "My Attendance";
     if (path.startsWith("/notifications")) return "Notifications";
+    if (path === "/events") return "Events";
+    if (path.startsWith("/events/")) return "Event detail";
     if (path.startsWith("/admin/users")) return "Manage Users";
     if (path.startsWith("/admin/clubs")) return "Manage Clubs";
     return "";
@@ -45,6 +54,15 @@ export function Header({ userImage, userName, userRole }: HeaderProps) {
         <h2 className={styles.pageTitle}>{getPageTitle(pathname || "")}</h2>
       </div>
       <div className={styles.rightSection}>
+        <Link
+          href="/notifications"
+          variant="unstyled"
+          className={styles.bellButton}
+          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+        >
+          <FaBell aria-hidden="true" />
+          {unreadCount > 0 && <span className={styles.bellDot} aria-hidden="true" />}
+        </Link>
         <div className={styles.userSection}>
           <div className={styles.userProfile}>
             {userImage && !imgError ? (
