@@ -11,7 +11,7 @@ export function SignInForm() {
   return (
     <div className={styles.form}>
       <Button
-        variant="secondary"
+        variant="primary"
         className={styles.button}
         onPress={() => void signIn("google", { callbackUrl: "/notifications" })}
       >

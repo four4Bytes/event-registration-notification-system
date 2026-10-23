@@ -11,6 +11,10 @@ const baseNotification: NotificationRow = {
   audience: NotificationAudience.ALL,
   clubName: null,
   clubShortName: null,
+  eventId: null,
+  eventTitle: null,
+  eventStartAt: null,
+  eventVenue: null,
   createdAt: new Date("2026-10-01T09:00:00Z"),
   isRead: false,
 };
@@ -19,7 +23,8 @@ const meta: Meta<typeof NotificationCard> = {
   component: NotificationCard,
   tags: ["autodocs"],
   args: {
-    onOpen: () => undefined,
+    isSelected: false,
+    onSelect: () => undefined,
   },
 };
 

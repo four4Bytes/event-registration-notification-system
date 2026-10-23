@@ -4,7 +4,17 @@ import clsx from "clsx";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { FaBars, FaBell, FaBuilding, FaUser, FaUsers, FaX } from "react-icons/fa6";
+import {
+  FaBars,
+  FaBell,
+  FaBuilding,
+  FaCalendarDays,
+  FaClipboardCheck,
+  FaTicket,
+  FaUser,
+  FaUsers,
+  FaX,
+} from "react-icons/fa6";
 
 import { Button } from "@/components/ui/Button/Button";
 import { useNavigationProgress } from "@/components/ui/TopProgressBar/navigation-context";
@@ -25,6 +35,9 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { label: "Events", href: "/events", icon: FaCalendarDays },
+  { label: "My Registrations", href: "/registrations", icon: FaTicket },
+  { label: "My Attendance", href: "/attendance", icon: FaClipboardCheck },
   { label: "Notifications", href: "/notifications", icon: FaBell },
   { label: "Manage Users", href: "/admin/users", icon: FaUsers, permission: "user.read" },
   { label: "Manage Clubs", href: "/admin/clubs", icon: FaBuilding, permission: "club.read" },
@@ -54,7 +67,7 @@ export function Sidebar({ initialCollapsed = false, userName, userRole, userImag
 
   const handleNavClick = (href: string) => {
     close();
-    if (!pathname.startsWith(href)) {
+    if (pathname !== href) {
       startLoading();
       router.push(href);
     }
@@ -64,19 +77,13 @@ export function Sidebar({ initialCollapsed = false, userName, userRole, userImag
     <>
       <aside className={clsx(styles.sidebar, collapsed && styles.collapsed)} data-open={isOpen}>
         <div className={styles.topRow}>
-          <Button
-            variant="ghost"
-            aria-label="Go to notifications"
-            onPress={() => handleNavClick("/notifications")}
-          >
-            <Image
-              src="/school-logo.svg"
-              alt="School logo"
-              width={48}
-              height={48}
-              className={styles.logo}
-            />
-          </Button>
+          <Image
+            src="/school-logo.svg"
+            alt="School logo"
+            width={48}
+            height={48}
+            className={styles.logo}
+          />
           <Button
             variant="ghost"
             className={styles.closeButton}
