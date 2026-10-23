@@ -1,22 +1,28 @@
 # AI and Development Evidence
 
 Drop the screenshots, recordings, and exports for the midterm here, then link them from
-[`documentation/AI-DECLARATION.md`](../documentation/AI-DECLARATION.md) Section C and
+[`documentation/AI-DECLARATION-FONTANILLA.md`](../documentation/AI-DECLARATION-FONTANILLA.md) and
+[`documentation/AI-DECLARATION-RABOSA.md`](../documentation/AI-DECLARATION-RABOSA.md) Section C, and from
 [`documentation/MIDTERM-SUBMISSION.md`](../documentation/MIDTERM-SUBMISSION.md) Section 3.
 
 Name files after the number they prove so the grader can match them without opening each one:
 
-| File                        | Rubric / form line                       |
-| --------------------------- | ---------------------------------------- |
-| `01-git-log.png`            | Proof 1 - git repository                 |
-| `02-screen-recording.mp4`   | Proof 2 - screen recording (3-5 minutes) |
-| `03-api-devtools.png`       | Proof 3 - API evidence                   |
-| `04-db-before.png`          | Proof 4 - database, before a change      |
-| `04-db-after.png`           | Proof 4 - database, after a change       |
-| `05-auth-roles.png`         | Proof 5 - roles and account rows         |
-| `05-auth-denied.png`        | Proof 5 - role-restricted page blocked   |
-| `06-walkthrough-<name>.mp4` | Proof 6 - one walkthrough per member     |
-| `07-ai-<n>-<what>.png`      | AI declaration Section B, row _n_        |
+| File                             | Rubric / form line                                                       |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| `01-git-log.png`                 | Proof 1 - git repository                                                 |
+| `02-screen-recording.mp4`        | Proof 2 - screen recording (3-5 minutes)                                 |
+| `03-api-devtools.png`            | Proof 3 - API evidence                                                   |
+| `04-db-before.png`               | Proof 4 - database, before a change                                      |
+| `04-db-after.png`                | Proof 4 - database, after a change                                       |
+| `05-auth-roles.png`              | Proof 5 - roles and account rows                                         |
+| `05-auth-denied.png`             | Proof 5 - role-restricted page blocked                                   |
+| `06-walkthrough-<name>.mp4`      | Proof 6 - one walkthrough per member                                     |
+| `07-ai-<initials><n>-<what>.png` | AI declaration Section B, row _n_ (initials: `f` Fontanilla, `r` Rabosa) |
+
+The `07-ai-*` files are captures of the saved OpenCode session for each declaration row. Each one carries a caption band
+with the session id, the row, and the local timestamp of the message shown; the transcript itself prints clock times
+without a date, so the caption is what makes the date visible. They were taken from the OpenCode web client of this
+workstation's session data, not retyped.
 
 ## Before you capture
 
