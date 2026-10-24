@@ -8,7 +8,6 @@ import { FaBars, FaUser } from "react-icons/fa6";
 import { useSidebar } from "@/components/layout/Sidebar/sidebar-context";
 import { Button } from "@/components/ui/Button/Button";
 import { SignOutButton } from "@/features/auth/components/SignOutButton/SignOutButton";
-import { NotificationBell } from "@/features/notifications/components/NotificationBell/NotificationBell";
 import { roleLabels } from "@/features/users/constants";
 import type { Role } from "@/generated/prisma/browser";
 
@@ -18,10 +17,9 @@ interface HeaderProps {
   userImage: string | null;
   userName?: string | null;
   userRole?: Role | null;
-  initialUnreadCount: number;
 }
 
-export function Header({ userImage, userName, userRole, initialUnreadCount }: HeaderProps) {
+export function Header({ userImage, userName, userRole }: HeaderProps) {
   const pathname = usePathname();
   const [imgError, setImgError] = useState(false);
   const { toggle } = useSidebar();
@@ -30,6 +28,7 @@ export function Header({ userImage, userName, userRole, initialUnreadCount }: He
     if (path.startsWith("/events")) return "Events";
     if (path.startsWith("/notifications")) return "Notifications";
     if (path.startsWith("/admin/users")) return "Manage Users";
+    if (path.startsWith("/admin/clubs")) return "Manage Clubs";
     return "";
   };
 
@@ -47,7 +46,6 @@ export function Header({ userImage, userName, userRole, initialUnreadCount }: He
         <h2 className={styles.pageTitle}>{getPageTitle(pathname || "")}</h2>
       </div>
       <div className={styles.rightSection}>
-        <NotificationBell initialUnreadCount={initialUnreadCount} />
         <div className={styles.userSection}>
           <div className={styles.userProfile}>
             {userImage && !imgError ? (

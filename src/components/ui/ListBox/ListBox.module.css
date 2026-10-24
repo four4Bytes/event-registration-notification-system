@@ -60,10 +60,12 @@
   }
 
   [slot="label"] {
+    color: inherit;
     font-weight: var(--font-weight-medium);
   }
 
   [slot="description"] {
+    color: inherit;
     font-size: var(--font-size-xs);
   }
 }
@@ -83,7 +85,7 @@
 }
 
 .dropdownItem {
-  padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-2xl);
+  padding: var(--space-sm) var(--space-2xl) var(--space-sm) var(--space-md);
   border-radius: var(--radius-sm);
   outline: none;
   cursor: default;
@@ -130,16 +132,21 @@
   }
 
   [slot="label"] {
+    color: inherit;
     font-weight: var(--font-weight-medium);
   }
 
   [slot="description"] {
+    color: inherit;
     font-size: var(--font-size-xs);
   }
 
   .checkIcon {
     position: absolute;
-    left: var(--space-sm);
+    right: var(--space-sm);
+    left: auto;
+    top: 50%;
+    transform: translateY(-50%);
     width: var(--icon-size-xs);
     height: var(--icon-size-xs);
     flex-shrink: 0;

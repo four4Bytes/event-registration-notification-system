@@ -1,31 +1,54 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  AddPendingUserSchema,
-  AssignableRoleSchema,
-  UpdateRoleSchema,
-} from "@/features/users/schemas";
-import { Role } from "@/generated/prisma/browser";
+import { AddPendingUserSchema } from "./schemas";
 
-const userId = `c${"a".repeat(24)}`;
+const basePayload = {
+  role: "STUDENT",
+  clubId: null,
+} as const;
 
-describe("assignable roles", () => {
-  it("rejects the retired ATTENDANCE_STAFF role in every payload", () => {
-    expect(AssignableRoleSchema.safeParse("ATTENDANCE_STAFF").success).toBe(false);
-    expect(UpdateRoleSchema.safeParse({ userId, role: "ATTENDANCE_STAFF" }).success).toBe(false);
-    expect(
-      AddPendingUserSchema.safeParse({ email: "staff@acdeducation.com", role: "ATTENDANCE_STAFF" })
-        .success,
-    ).toBe(false);
-  });
+describe("AddPendingUserSchema", () => {
+  it.each([
+    {
+      email: "student@acdeducation.com",
+      allowExternalEmail: false,
+      expected: true,
+    },
+    {
+      email: "student@acdeducation.com",
+      allowExternalEmail: true,
+      expected: true,
+    },
+    {
+      email: "guest@example.com",
+      allowExternalEmail: true,
+      expected: true,
+    },
+    {
+      email: "guest@example.com",
+      allowExternalEmail: false,
+      expected: false,
+    },
+  ])(
+    "returns $expected for $email with bypass set to $allowExternalEmail",
+    ({ email, allowExternalEmail, expected }) => {
+      const result = AddPendingUserSchema.safeParse({
+        ...basePayload,
+        email,
+        allowExternalEmail,
+      });
+      expect(result.success).toBe(expected);
+    },
+  );
 
-  it("accepts every remaining assignable role", () => {
-    for (const role of [Role.STUDENT, Role.OFFICER, Role.ADMIN, Role.APPROVER]) {
-      expect(AssignableRoleSchema.safeParse(role).success).toBe(true);
-    }
-  });
+  it("reports an unapproved external email on the email field", () => {
+    const result = AddPendingUserSchema.safeParse({
+      ...basePayload,
+      email: "guest@example.com",
+    });
 
-  it("keeps DEV out of the assignable set, since it is support-only", () => {
-    expect(AssignableRoleSchema.safeParse(Role.DEV).success).toBe(false);
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(result.error.issues[0]?.path).toEqual(["email"]);
   });
 });

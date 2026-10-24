@@ -15,8 +15,9 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "node_modules/.prisma/**",
     "storybook-static/**",
-    // Agent tooling, owned by its own setup and not part of this project's build.
+    // Local agent tooling, not part of the app.
     ".agents/**",
+    ".opencode/**",
   ]),
   ...storybook.configs["flat/recommended"],
   // Type-aware linting (required for no-deprecated rule)

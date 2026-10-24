@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 
 import { Link } from "@/components/ui/Link/Link";
+import { SCHOOL_EMAIL_DOMAINS_TEXT } from "@/lib/security/email-domain";
 
 import styles from "./AuthErrorPage.module.css";
 
@@ -15,7 +16,7 @@ const errorMap: Record<string, { title: string; message: string }> = {
   AccessDenied: {
     title: "Access denied",
     message:
-      "You don't have permission to sign in with this account. Use your @acdeducation.com account or contact your administrator.",
+      "You don't have permission to sign in with this account. Your account may have been deactivated. If this is a mistake, please contact your administrator.",
   },
   Forbidden: {
     title: "Access denied",
@@ -23,8 +24,8 @@ const errorMap: Record<string, { title: string; message: string }> = {
       "You don't have permission to view this page. Contact your administrator if you need access.",
   },
   Domain: {
-    title: "School account required",
-    message: "Use your @acdeducation.com account to sign in.",
+    title: "Email domain not allowed",
+    message: `Use your school account (${SCHOOL_EMAIL_DOMAINS_TEXT}), or ask an administrator to invite this email.`,
   },
   Deactivated: {
     title: "Account deactivated",

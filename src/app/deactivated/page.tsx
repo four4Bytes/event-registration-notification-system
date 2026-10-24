@@ -1,7 +1,7 @@
 import { Link } from "@/components/ui/Link/Link";
+import { NoticePage } from "@/components/ui/NoticePage/NoticePage";
 
 import { DeactivatedSignOut } from "./deactivated-sign-out";
-import styles from "./deactivated.module.css";
 
 interface DeactivatedPageProps {
   searchParams: Promise<{ reason?: string }>;
@@ -17,13 +17,11 @@ export default async function DeactivatedPage({ searchParams }: DeactivatedPageP
     : "Your session has ended. Please sign in again.";
 
   return (
-    <main className={styles.page}>
+    <>
       <DeactivatedSignOut />
-      <div className={styles.content}>
-        <h1 className={styles.title}>{title}</h1>
-        <p className={styles.message}>{message}</p>
+      <NoticePage title={title} message={message}>
         <Link href="/sign-in">Back to Sign In</Link>
-      </div>
-    </main>
+      </NoticePage>
+    </>
   );
 }

@@ -1,0 +1,124 @@
+.card {
+  position: relative;
+  width: 100%;
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-bg);
+  color: var(--color-text-primary);
+  text-align: left;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+
+  &:hover,
+  &:has(.header .titleButton:focus-visible) {
+    border-color: var(--color-brand-accent);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    flex: 0 0 auto;
+    margin-top: 0.35rem;
+    border-radius: 50%;
+    background: var(--color-border-default);
+  }
+
+  .content {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-lg);
+
+    .titleButton {
+      padding: 0;
+      border: none;
+      background: none;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+
+      &::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: var(--radius-md);
+      }
+
+      &:focus-visible {
+        outline: none;
+      }
+    }
+
+    .title {
+      font-size: var(--font-size-base);
+    }
+
+    .time {
+      color: var(--color-text-muted);
+      font-size: var(--font-size-xs);
+      white-space: nowrap;
+    }
+  }
+
+  .body {
+    display: -webkit-box;
+    overflow: hidden;
+    color: var(--color-text-secondary);
+    white-space: pre-wrap;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .club {
+    position: relative;
+    z-index: 1;
+    align-self: flex-start;
+    color: var(--color-brand-accent);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+
+  &.unread {
+    box-shadow: var(--shadow-sm);
+
+    .dot {
+      background: var(--color-brand-accent);
+    }
+  }
+
+  .srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+@media (max-width: 48rem) {
+  .card {
+    .header {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+  }
+}

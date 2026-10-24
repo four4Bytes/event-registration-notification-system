@@ -7,20 +7,20 @@ import { Button } from "@/components/ui/Button/Button";
 import { Modal } from "@/components/ui/Modal/Modal";
 import { Select, SelectItem } from "@/components/ui/Select/Select";
 import { TextField } from "@/components/ui/TextField/TextField";
+import { getClubOptionsAction } from "@/features/clubs/actions";
+import { formatClubLabel } from "@/features/clubs/constants";
+import type { ClubOption } from "@/features/clubs/queries";
 import { sendNotificationAction } from "@/features/notifications/actions";
-import { SendNotificationSchema } from "@/features/notifications/schemas";
-import { getClubsAction } from "@/features/users/actions";
+import {
+  SendNotificationSchema,
+  type SendNotificationPayload,
+} from "@/features/notifications/schemas";
 import { NotificationAudience } from "@/generated/prisma/browser";
 import { toastError } from "@/lib/hooks/toast-utils";
 import { useModalForm } from "@/lib/hooks/useModalForm";
 import { createFieldValidator, requiredString } from "@/lib/validation/form-utils";
 
 import styles from "./SendNotificationModal.module.css";
-
-interface ClubOption {
-  id: string;
-  name: string;
-}
 
 interface SendNotificationModalProps {
   isOpen: boolean;
@@ -46,7 +46,7 @@ export function SendNotificationModal({
     setClubId(null);
   };
 
-  const { isPending, submitForm, handleCancel } = useModalForm({
+  const { isPending, submitForm, handleCancel } = useModalForm<SendNotificationPayload>({
     submit: sendNotificationAction,
     onOpenChange,
     onSuccess,
@@ -62,7 +62,7 @@ export function SendNotificationModal({
     let cancelled = false;
     async function loadClubs() {
       try {
-        const rows = await getClubsAction();
+        const rows = await getClubOptionsAction();
         if (!cancelled) setClubs(rows);
       } catch {
         if (!cancelled) {
@@ -141,7 +141,7 @@ export function SendNotificationModal({
             >
               {clubs.map((club) => (
                 <SelectItem key={club.id} id={club.id}>
-                  {club.name}
+                  {formatClubLabel(club)}
                 </SelectItem>
               ))}
             </Select>

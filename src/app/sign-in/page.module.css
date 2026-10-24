@@ -7,9 +7,8 @@
   background: var(--color-app-bg);
 
   .card {
-    width: min(100%, 25rem);
-    padding: clamp(var(--space-2xl), 8vw, var(--space-4xl));
-    border: 1px solid var(--color-border-subtle);
+    width: min(100%, 27rem);
+    padding: var(--space-4xl) var(--space-3xl);
     border-radius: var(--radius-lg);
     background: var(--color-surface-bg);
     box-shadow: var(--shadow-lg);
@@ -21,35 +20,41 @@
       margin: 0 auto var(--space-xl);
     }
 
-    .title {
-      color: var(--color-text-secondary);
-      font-weight: var(--font-weight-black);
-      font-size: var(--font-size-md);
-      line-height: var(--line-height-normal);
-    }
-
     .greetings {
+      color: var(--color-text-primary);
       font-size: var(--font-size-2xl);
-      line-height: var(--line-height-normal);
-    }
-
-    h1 {
-      color: var(--color-text-muted);
-      margin-top: var(--space-md);
-      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-semi-bold);
+      line-height: 36px;
     }
 
     .description {
-      margin: var(--space-md) 0 var(--space-2xl);
+      margin: var(--space-sm) 0 var(--space-2xl);
       color: var(--color-text-muted);
-      line-height: var(--line-height-normal);
       font-size: var(--font-size-sm);
+      line-height: var(--line-height-normal);
     }
 
     .note {
-      margin-top: var(--space-lg);
+      margin-top: var(--space-xl);
+      padding-top: var(--space-lg);
+      border-top: 1px solid var(--color-border-subtle);
       color: var(--color-text-muted);
       font-size: var(--font-size-xs);
+      line-height: var(--line-height-normal);
+    }
+  }
+}
+
+/* Narrow screens: tighten the card padding and heading. */
+@media (max-width: 27rem) {
+  .page {
+    .card {
+      padding: var(--space-2xl);
+
+      .greetings {
+        font-size: var(--font-size-lg);
+        line-height: var(--line-height-tight);
+      }
     }
   }
 }

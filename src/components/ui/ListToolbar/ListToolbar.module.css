@@ -1,0 +1,21 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+
+  .searchField {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Mobile overrides */
+@media (max-width: 48rem) {
+  .toolbar {
+    flex-wrap: wrap;
+
+    .searchField {
+      flex: 1 1 100%;
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import { FORBIDDEN_MESSAGE } from "@/lib/security/rbac";
+
 export type ActionErrorCode =
   "unauthorized" | "forbidden" | "not_found" | "validation" | "conflict" | "unknown";
 
@@ -33,11 +35,7 @@ export function actionInvalid(entity: string): ActionStatusResponse {
 }
 
 export function actionForbidden(): ActionStatusResponse {
-  return actionError(
-    "forbidden",
-    "Access denied",
-    "You don't have permission to perform this action.",
-  );
+  return actionError("forbidden", "Access denied", FORBIDDEN_MESSAGE);
 }
 
 export function actionUnauthorized(): ActionStatusResponse {

@@ -17,3 +17,12 @@ export const prisma: PrismaClient = new Proxy({} as PrismaClient, {
     return Reflect.get(client, property, receiver);
   },
 });
+
+/**
+ * Returns the shared Prisma client for the NextAuth Prisma adapter.
+ *
+ * @returns The singleton {@link prisma} client.
+ */
+export function getAuthAdapterClient(): PrismaClient {
+  return prisma;
+}

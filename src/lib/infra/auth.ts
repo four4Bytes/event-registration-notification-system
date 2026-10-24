@@ -2,22 +2,20 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
-import { getAuthAdapterClient } from "@/features/users/mutations";
 import { Role } from "@/generated/prisma/browser";
-import { isDevLoginEnabled } from "@/lib/infra/dev-auth";
-import { getOptionalEnvVar } from "@/lib/infra/env";
-import { getGoogleCredentials } from "@/lib/infra/google-credentials";
-import { SESSION_MAX_AGE_SECONDS } from "@/lib/infra/session";
-
-const schoolDomain = "@acdeducation.com";
+import { getOptionalEnvVar, getRequiredEnvVar } from "@/lib/infra/env";
+import { getAuthAdapterClient } from "@/lib/infra/prisma";
+import { isAllowedEmail, isSchoolEmail } from "@/lib/security/email-domain";
 
 /**
- * NextAuth configuration (Google OAuth + Prisma adapter + database sessions).
+ * NextAuth configuration (Google OAuth + Prisma adapter + JWT sessions).
  *
- * The `signIn` callback gates access by school-domain email, bootstrap
- * `DEV_EMAIL`, pending role assignments, and active-user status; the `session`
- * callback projects the database `id`, `role`, `isActive`, and `clubId` onto
- * the session so downstream guards see the verified user.
+ * The `signIn` callback gates access by school-domain email (or an approved
+ * external address), bootstrap `DEV_EMAIL`, pending role assignments, and
+ * active-user status; the `session` callbacks refresh the database `id`,
+ * `role`, `isActive`, and `clubId` onto the JWT and session so deactivated
+ * users can be redirected to the notice page without being silently sent to
+ * sign-in.
  *
  * Exports the route `handlers`, `signIn`/`signOut` helpers, and the `auth()`
  * session getter.
@@ -26,20 +24,15 @@ const googleCredentials = getGoogleCredentials(isDevLoginEnabled());
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(getAuthAdapterClient()),
-  providers: googleCredentials.isConfigured
-    ? [
-        Google({
-          clientId: googleCredentials.clientId,
-          clientSecret: googleCredentials.clientSecret,
-          // Bypasses the OAuthAccountNotLinked block dynamically in both dev and prod environment
-          allowDangerousEmailAccountLinking: true,
-        }),
-      ]
-    : [],
-  session: {
-    strategy: "database",
-    maxAge: SESSION_MAX_AGE_SECONDS,
-  },
+  providers: [
+    Google({
+      clientId: getRequiredEnvVar("AUTH_GOOGLE_ID"),
+      clientSecret: getRequiredEnvVar("AUTH_GOOGLE_SECRET"),
+      // Bypasses the OAuthAccountNotLinked block dynamically in both dev and prod environment
+      allowDangerousEmailAccountLinking: true,
+    }),
+  ],
+  session: { strategy: "jwt" },
   pages: {
     signIn: "/sign-in",
     error: "/auth/error",
@@ -68,8 +61,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         existingUser?.role === Role.OFFICER ||
         existingUser?.role === Role.ADMIN ||
         existingUser?.role === Role.DEV;
+      const allowExternalEmail =
+        existingUser?.allowExternalEmail ?? pending?.allowExternalEmail ?? false;
 
-      if (email !== devEmail && !hasPrivilegedRole && !email.endsWith(schoolDomain)) {
+      if (email !== devEmail && !hasPrivilegedRole && !isAllowedEmail(email, allowExternalEmail)) {
         return "/auth/error?error=Domain";
       }
 
@@ -82,6 +77,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               name: user.name ?? email,
               image: user.image,
               role,
+              allowExternalEmail: allowExternalEmail && !isSchoolEmail(email),
+              clubId: pending?.clubId ?? null,
             },
           });
           if (pending)
@@ -102,12 +99,29 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return true;
     },
 
-    async session({ session, user }) {
+    async jwt({ token }) {
+      if (!token.email) return token;
+
+      const user = await getAuthAdapterClient().user.findUnique({
+        where: { email: token.email },
+        select: { id: true, role: true, isActive: true, clubId: true },
+      });
+
+      if (!user) return null;
+
+      token.id = user.id;
+      token.role = user.role;
+      token.isActive = user.isActive;
+      token.clubId = user.clubId;
+      return token;
+    },
+
+    async session({ session, token }) {
       if (session.user) {
-        session.user.id = user.id;
-        session.user.role = user.role ?? Role.STUDENT;
-        session.user.isActive = user.isActive !== false;
-        session.user.clubId = user.clubId ?? null;
+        session.user.id = token.id ?? "";
+        session.user.role = token.role ?? Role.STUDENT;
+        session.user.isActive = token.isActive !== false;
+        session.user.clubId = token.clubId ?? null;
       }
       return session;
     },

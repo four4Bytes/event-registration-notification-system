@@ -5,14 +5,11 @@
   flex-direction: column;
 
   .toolbar {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
     margin-bottom: var(--space-lg);
+  }
 
-    .addButton {
-      flex-shrink: 0;
-    }
+  .addButton {
+    flex-shrink: 0;
   }
 
   .loadingContainer {
@@ -32,17 +29,8 @@
   .content {
     min-height: 300px;
 
-    .toolbar {
-      flex-direction: row;
-      flex-wrap: wrap;
-
-      .searchField {
-        flex: 1 1 100%;
-      }
-
-      .addButton {
-        flex: 1;
-      }
+    .addButton {
+      flex: 1;
     }
   }
 }

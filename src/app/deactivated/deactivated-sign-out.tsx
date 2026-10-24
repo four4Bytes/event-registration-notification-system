@@ -2,12 +2,12 @@
 
 import { useEffect } from "react";
 
-import { clearDeactivatedSession } from "@/features/auth/actions";
+import { clearDeactivatedSessionAction } from "@/features/auth/actions";
 
 export function DeactivatedSignOut() {
   useEffect(() => {
     async function clearSession() {
-      await clearDeactivatedSession();
+      await clearDeactivatedSessionAction();
     }
     void clearSession();
   }, []);

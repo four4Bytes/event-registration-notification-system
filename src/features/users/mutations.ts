@@ -1,8 +1,12 @@
 import type { Role } from "@/generated/prisma/browser";
 import { prisma } from "@/lib/infra/prisma";
 
-export function getAuthAdapterClient(): typeof prisma {
-  return prisma;
+export interface PendingRoleAssignmentPayload {
+  email: string;
+  role: Role;
+  allowExternalEmail: boolean;
+  assignedById: string;
+  clubId: string | null;
 }
 
 export async function ensureDeveloperUser(email: string): Promise<void> {
@@ -27,18 +31,21 @@ export async function setUserActive(userId: string, isActive: boolean): Promise<
   await prisma.user.update({ where: { id: userId }, data: { isActive } });
 }
 
-export async function upsertPendingAssignment(
-  email: string,
-  role: Role,
-  assignedById: string,
+export async function setUserClub(userId: string, clubId: string | null): Promise<void> {
+  await prisma.user.update({ where: { id: userId }, data: { clubId } });
+}
+
+export async function upsertPendingRoleAssignment(
+  payload: PendingRoleAssignmentPayload,
 ): Promise<void> {
+  const { email, role, allowExternalEmail, assignedById, clubId } = payload;
   await prisma.pendingRoleAssignment.upsert({
     where: { email },
-    update: { role, assignedById, assignedAt: new Date() },
-    create: { email, role, assignedById },
+    update: { role, allowExternalEmail, assignedById, clubId, assignedAt: new Date() },
+    create: { email, role, allowExternalEmail, assignedById, clubId },
   });
 }
 
-export async function deletePendingAssignment(id: string): Promise<void> {
-  await prisma.pendingRoleAssignment.delete({ where: { id } });
+export async function deletePendingRoleAssignment(roleAssignmentId: string): Promise<void> {
+  await prisma.pendingRoleAssignment.delete({ where: { id: roleAssignmentId } });
 }
