@@ -25,7 +25,8 @@ import { createFieldValidator, requiredString } from "@/lib/validation/form-util
 
 import styles from "./AddUserModal.module.css";
 
-type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
+const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN];
+type AssignableRole = (typeof roles)[number];
 
 const NO_CLUB = "none";
 const validateEmailFormat = createFieldValidator(AddPendingUserSchema.shape.email);
@@ -132,12 +133,12 @@ export function AddUserModal({ isOpen, onOpenChange, onSuccess }: AddUserModalPr
             value={role}
             onChange={(value) => {
               const selectedRole = String(value) as AssignableRole;
-              if (ASSIGNABLE_ROLES.includes(selectedRole)) setRole(selectedRole);
+              if (roles.includes(selectedRole)) setRole(selectedRole);
             }}
             validate={createFieldValidator(AddPendingUserSchema.shape.role)}
             isDisabled={isPending}
           >
-            {ASSIGNABLE_ROLES.map((item) => (
+            {roles.map((item) => (
               <SelectItem key={item} id={item}>
                 {item}
               </SelectItem>

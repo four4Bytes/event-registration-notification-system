@@ -20,8 +20,6 @@ import { isAllowedEmail, isSchoolEmail } from "@/lib/security/email-domain";
  * Exports the route `handlers`, `signIn`/`signOut` helpers, and the `auth()`
  * session getter.
  */
-const googleCredentials = getGoogleCredentials(isDevLoginEnabled());
-
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(getAuthAdapterClient()),
   providers: [

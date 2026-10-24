@@ -1,26 +1,39 @@
-import { EventStatus, Role } from "@/generated/prisma/browser";
+import type { Event } from "@/generated/prisma/client";
 import { prisma } from "@/lib/infra/prisma";
 
-export interface EventListRow {
-  id: string;
-  title: string;
-  venue: string;
-  startAt: Date;
-  status: EventStatus;
-}
+export type EventRow = Pick<
+  Event,
+  "id" | "title" | "description" | "venue" | "startAt" | "endAt"
+> & {
+  clubName: string | null;
+  organizer: string;
+};
 
-export async function getEvents(viewerRole: Role): Promise<EventListRow[]> {
-  return prisma.event.findMany({
-    where: viewerRole === Role.STUDENT ? { status: EventStatus.PUBLISHED } : undefined,
-    select: { id: true, title: true, venue: true, startAt: true, status: true },
-    orderBy: { startAt: "asc" },
-  });
-}
-
-export async function getEventStatus(eventId: string): Promise<EventStatus | null> {
+export async function getEventById(eventId: string): Promise<EventRow | null> {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    select: { status: true },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      venue: true,
+      startAt: true,
+      endAt: true,
+      club: { select: { name: true } },
+      createdBy: { select: { name: true } },
+    },
   });
-  return event?.status ?? null;
+
+  if (!event) return null;
+
+  return {
+    id: event.id,
+    title: event.title,
+    description: event.description,
+    venue: event.venue,
+    startAt: event.startAt,
+    endAt: event.endAt,
+    clubName: event.club?.name ?? null,
+    organizer: event.club?.name ?? event.createdBy.name,
+  };
 }

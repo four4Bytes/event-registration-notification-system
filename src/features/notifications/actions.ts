@@ -6,7 +6,7 @@ import { actionInvalid, type ActionStatusResponse } from "@/lib/security/action-
 import { requireAuth, requirePermission } from "@/lib/security/auth-guards";
 import { toActionResponse } from "@/lib/security/errors";
 
-import { createNotification, markNotificationRead } from "./mutations";
+import { createNotification, markAllNotificationsRead, markNotificationRead } from "./mutations";
 import {
   getNotificationPage,
   getNotificationRecipients,
@@ -67,6 +67,22 @@ export async function markNotificationReadAction(
     return { success: true };
   } catch (error) {
     return toActionResponse(error, "mark notification as read");
+  }
+}
+
+/**
+ * Marks every notification visible to the signed-in user as read.
+ *
+ * @returns `success: true`, or a sanitized error envelope.
+ * @throws {ForbiddenError} When the caller lacks `notification.read`.
+ */
+export async function markAllNotificationsReadAction(): Promise<ActionStatusResponse> {
+  try {
+    const session = await requirePermission("notification.read");
+    await markAllNotificationsRead(buildNotificationScope(session));
+    return { success: true };
+  } catch (error) {
+    return toActionResponse(error, "mark all notifications as read");
   }
 }
 

@@ -4,7 +4,7 @@ import { Role } from "@/generated/prisma/browser";
 import { isAllowedEmail, SCHOOL_EMAIL_REQUIRED_MESSAGE } from "@/lib/security/email-domain";
 import { emailText, optionalText } from "@/lib/validation/form-utils";
 
-export const AssignableRoleSchema = z.enum(ASSIGNABLE_ROLES);
+export const AssignableRoleSchema = z.enum([Role.STUDENT, Role.OFFICER, Role.ADMIN]);
 
 const cuidSchema = z.string().regex(/^c[a-z0-9]{24}$/, "Invalid user identifier");
 const clubIdSchema = z.string().regex(/^c[a-z0-9]{24}$/, "Invalid club identifier");

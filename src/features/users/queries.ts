@@ -193,12 +193,3 @@ export async function countActivePrivilegedUsers(excludeUserId?: string): Promis
     },
   });
 }
-
-// Development-only sign-in list (ADR-0008): only the accounts the seed creates.
-export async function getDevSignInAccounts() {
-  return prisma.user.findMany({
-    where: { email: { in: DEMO_ACCOUNTS.map((account) => account.email) } },
-    select: { email: true, role: true },
-    orderBy: { email: "asc" },
-  });
-}

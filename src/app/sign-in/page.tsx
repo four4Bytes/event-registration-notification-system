@@ -1,14 +1,10 @@
 import Image from "next/image";
 
 import { SignInForm } from "@/features/auth/components/SignInForm/SignInForm";
-import { getDevSignInAccounts } from "@/features/users/queries";
-import { isDevLoginEnabled } from "@/lib/infra/dev-auth";
 
 import styles from "./page.module.css";
 
-export default async function SignInPage() {
-  const devUsers = isDevLoginEnabled() ? await getDevSignInAccounts() : [];
-
+export default function SignInPage() {
   return (
     <main className={styles.page}>
       <section className={styles.card}>

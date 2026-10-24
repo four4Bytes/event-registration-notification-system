@@ -10,7 +10,7 @@ import {
 import { prisma } from "@/lib/infra/prisma";
 import type { PageQuery } from "@/lib/primitives/types";
 
-import type { NotificationScope } from "./scope";
+import { buildNotificationAudienceFilter, type NotificationScope } from "./scope";
 
 export interface NotificationRow {
   id: string;
@@ -19,6 +19,10 @@ export interface NotificationRow {
   audience: NotificationAudience;
   clubName: string | null;
   clubShortName: string | null;
+  eventId: string | null;
+  eventTitle: string | null;
+  eventStartAt: Date | null;
+  eventVenue: string | null;
   createdAt: Date;
   isRead: boolean;
 }
@@ -28,16 +32,6 @@ export type NotificationPage = CursorPage<NotificationRow>;
 export interface NotificationPageParams {
   scope: NotificationScope;
   query: PageQuery;
-}
-
-function buildAudienceFilter(scope: NotificationScope): Prisma.NotificationWhereInput {
-  if (scope.viewAll) return {};
-  return {
-    OR: [
-      { audience: NotificationAudience.ALL },
-      ...(scope.clubId ? [{ audience: NotificationAudience.CLUB, clubId: scope.clubId }] : []),
-    ],
-  };
 }
 
 function buildSearchFilter(search: string): Prisma.NotificationWhereInput {
@@ -84,7 +78,7 @@ export async function getNotificationPage({
   const rows = await prisma.notification.findMany({
     where: {
       AND: [
-        buildAudienceFilter(scope),
+        buildNotificationAudienceFilter(scope),
         buildReadStatusFilter(query.filters?.status, scope.userId),
         buildSearchFilter(search),
         buildCursorFilter(cursor, ascending),
@@ -94,6 +88,7 @@ export async function getNotificationPage({
     take: pageSize + 1,
     include: {
       club: { select: { name: true, shortName: true } },
+      event: { select: { id: true, title: true, startAt: true, venue: true } },
       reads: { where: { userId: scope.userId }, select: { id: true } },
     },
   });
@@ -110,6 +105,10 @@ export async function getNotificationPage({
       audience: row.audience,
       clubName: row.club?.name ?? null,
       clubShortName: row.club?.shortName ?? null,
+      eventId: row.event?.id ?? null,
+      eventTitle: row.event?.title ?? null,
+      eventStartAt: row.event?.startAt ?? null,
+      eventVenue: row.event?.venue ?? null,
       createdAt: row.createdAt,
       isRead: row.reads.length > 0,
     })),
@@ -121,7 +120,7 @@ export async function getNotificationPage({
 export async function getUnreadNotificationCount(scope: NotificationScope): Promise<number> {
   return prisma.notification.count({
     where: {
-      ...buildAudienceFilter(scope),
+      ...buildNotificationAudienceFilter(scope),
       reads: { none: { userId: scope.userId } },
     },
   });

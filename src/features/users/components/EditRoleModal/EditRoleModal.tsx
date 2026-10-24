@@ -14,7 +14,8 @@ import { createFieldValidator } from "@/lib/validation/form-utils";
 
 import styles from "./EditRoleModal.module.css";
 
-type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
+const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN];
+type AssignableRole = (typeof roles)[number];
 
 interface EditRoleModalProps {
   userId: string;
@@ -68,12 +69,12 @@ export function EditRoleModal({
             value={role}
             onChange={(value) => {
               const selectedRole = String(value) as AssignableRole;
-              if (ASSIGNABLE_ROLES.includes(selectedRole)) setRole(selectedRole);
+              if (roles.includes(selectedRole)) setRole(selectedRole);
             }}
             validate={createFieldValidator(UpdateUserRoleSchema.shape.role)}
             isDisabled={isPending}
           >
-            {ASSIGNABLE_ROLES.map((item) => (
+            {roles.map((item) => (
               <SelectItem key={item} id={item}>
                 {item}
               </SelectItem>
