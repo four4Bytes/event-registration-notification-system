@@ -10,6 +10,7 @@ import {
   FaBuilding,
   FaCalendarDays,
   FaClipboardCheck,
+  FaHouse,
   FaTicket,
   FaUser,
   FaUsers,
@@ -35,6 +36,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: FaHouse },
   { label: "Events", href: "/events", icon: FaCalendarDays },
   { label: "My Registrations", href: "/registrations", icon: FaTicket },
   { label: "My Attendance", href: "/attendance", icon: FaClipboardCheck },

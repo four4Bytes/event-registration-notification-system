@@ -13,7 +13,7 @@ export function SignInForm() {
       <Button
         variant="primary"
         className={styles.button}
-        onPress={() => void signIn("google", { callbackUrl: "/notifications" })}
+        onPress={() => void signIn("google", { callbackUrl: "/dashboard" })}
       >
         <FcGoogle aria-hidden="true" className={styles.icon} />
         Continue with Google

@@ -1,9 +1,9 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-md);
   height: 100%;
-  padding: var(--space-xl);
+  padding: var(--space-lg);
   color: var(--color-text-primary);
   text-decoration: none;
   background-color: var(--color-surface-bg);
@@ -12,15 +12,16 @@
   transition:
     background-color var(--transition-base),
     border-color var(--transition-base),
-    transform var(--transition-fast);
+    transform var(--transition-slow);
 
   &[data-hovered] {
+    z-index: 1;
     background-color: var(--color-surface-hover);
-    border-color: var(--color-brand-accent);
+    transform: scale(1.02);
   }
 
   &[data-pressed] {
-    transform: translateY(1px);
+    transform: scale(0.99);
   }
 
   &[data-focus-visible] {

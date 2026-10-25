@@ -1,7 +1,7 @@
 import { DefaultSession, DefaultUser } from "next-auth";
 import { JWT as DefaultJWT } from "next-auth/jwt";
 
-import { Role } from "@/generated/prisma/browser";
+import { OfficerPosition, Role } from "@/generated/prisma/browser";
 
 declare module "next-auth" {
   // Extends the built-in session.user object to include our custom database fields.
@@ -11,6 +11,7 @@ declare module "next-auth" {
       role: Role;
       isActive: boolean;
       clubId: string | null;
+      officerPosition: OfficerPosition | null;
     } & DefaultSession["user"];
   }
 
@@ -19,6 +20,7 @@ declare module "next-auth" {
     role?: Role;
     isActive?: boolean;
     clubId?: string | null;
+    officerPosition?: OfficerPosition | null;
   }
 }
 
@@ -29,5 +31,6 @@ declare module "next-auth/jwt" {
     role?: Role;
     isActive?: boolean;
     clubId?: string | null;
+    officerPosition?: OfficerPosition | null;
   }
 }

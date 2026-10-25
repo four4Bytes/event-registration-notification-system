@@ -18,7 +18,7 @@ function clubFields(clubId: string | null) {
   return { clubId, clubName: club.name, clubShortName: club.shortName };
 }
 
-export const previewUsers: UserManagementRow[] = [
+const users: Omit<UserManagementRow, "officerPosition">[] = [
   {
     kind: "pending",
     id: "pen0000000000000000000001",
@@ -110,3 +110,8 @@ export const previewUsers: UserManagementRow[] = [
     createdAt: new Date("2026-10-13T09:00:00+08:00"),
   },
 ];
+
+export const previewUsers: UserManagementRow[] = users.map((user) => ({
+  ...user,
+  officerPosition: null,
+}));

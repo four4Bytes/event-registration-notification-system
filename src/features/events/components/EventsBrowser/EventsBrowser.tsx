@@ -10,13 +10,18 @@ import type { EventFilter } from "../../types";
 import { EventCard } from "../EventCard/EventCard";
 import styles from "./EventsBrowser.module.css";
 
-export function EventsBrowser() {
+interface EventsBrowserProps {
+  initialStatus?: EventFilter["status"];
+}
+
+export function EventsBrowser({ initialStatus = "all" }: EventsBrowserProps) {
   const events = useEvents();
   const [search, setSearch] = useState("");
   const [host, setHost] = useState<EventFilter["host"]>("all");
   const [time, setTime] = useState<EventFilter["time"]>("upcoming");
+  const [status, setStatus] = useState<EventFilter["status"]>(initialStatus);
 
-  const filteredEvents = filterEvents(events, { search, host, time });
+  const filteredEvents = filterEvents(events, { search, host, time, status });
 
   return (
     <div className={styles.page}>
@@ -50,6 +55,17 @@ export function EventsBrowser() {
         >
           <SelectItem id="upcoming">Upcoming</SelectItem>
           <SelectItem id="all">All dates</SelectItem>
+        </Select>
+        <Select
+          aria-label="Filter by registration status"
+          value={status}
+          onChange={(key) => {
+            if (key === "open" || key === "all") setStatus(key);
+          }}
+          className={styles.select}
+        >
+          <SelectItem id="all">Any status</SelectItem>
+          <SelectItem id="open">Open for registration</SelectItem>
         </Select>
         <p className={styles.resultCount} aria-live="polite">
           Showing {filteredEvents.length} of {events.length} events

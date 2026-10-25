@@ -1,4 +1,4 @@
-import { Role } from "@/generated/prisma/browser";
+import { OfficerPosition, Role } from "@/generated/prisma/browser";
 import { Prisma } from "@/generated/prisma/client";
 import {
   decodeTimestampCursor,
@@ -15,6 +15,7 @@ export interface UserManagementRow {
   name: string | null;
   email: string;
   role: Role;
+  officerPosition: OfficerPosition | null;
   isActive: boolean | null;
   clubId: string | null;
   clubName: string | null;
@@ -109,6 +110,7 @@ export async function getUserManagementPage(
             name: true,
             email: true,
             role: true,
+            officerPosition: true,
             isActive: true,
             createdAt: true,
             clubId: true,
@@ -129,6 +131,7 @@ export async function getUserManagementPage(
             id: true,
             email: true,
             role: true,
+            officerPosition: true,
             assignedAt: true,
             clubId: true,
             club: { select: { name: true, shortName: true } },
@@ -144,6 +147,7 @@ export async function getUserManagementPage(
       name: user.name,
       email: user.email,
       role: user.role,
+      officerPosition: user.officerPosition,
       isActive: user.isActive,
       clubId: user.clubId,
       clubName: user.club?.name ?? null,
@@ -156,6 +160,7 @@ export async function getUserManagementPage(
       name: null,
       email: assignment.email,
       role: assignment.role,
+      officerPosition: assignment.officerPosition,
       isActive: null,
       clubId: assignment.clubId,
       clubName: assignment.club?.name ?? null,
@@ -175,12 +180,39 @@ export async function getUserManagementPage(
   };
 }
 
-export async function getUserById(
-  userId: string,
-): Promise<{ id: string; role: Role; isActive: boolean | null } | null> {
+export interface UserAuthorization {
+  id: string;
+  role: Role;
+  officerPosition: OfficerPosition | null;
+  isActive: boolean | null;
+  clubId: string | null;
+}
+
+export async function getUserById(userId: string): Promise<UserAuthorization | null> {
   return prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true, isActive: true },
+    select: {
+      id: true,
+      role: true,
+      officerPosition: true,
+      isActive: true,
+      clubId: true,
+    },
+  });
+}
+
+export interface ClubOfficerOption {
+  id: string;
+  name: string;
+  email: string;
+  officerPosition: OfficerPosition | null;
+}
+
+export async function getClubOfficers(clubId: string): Promise<ClubOfficerOption[]> {
+  return prisma.user.findMany({
+    where: { clubId, role: Role.OFFICER, isActive: true },
+    orderBy: [{ officerPosition: { sort: "desc", nulls: "last" } }, { name: "asc" }],
+    select: { id: true, name: true, email: true, officerPosition: true },
   });
 }
 

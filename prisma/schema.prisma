@@ -19,6 +19,21 @@ enum NotificationAudience {
   CLUB
 }
 
+enum OfficerPosition {
+  PRESIDENT
+}
+
+enum TaskType {
+  ATTENDANCE
+  GENERAL
+}
+
+enum TaskStatus {
+  ASSIGNED
+  IN_PROGRESS
+  DONE
+}
+
 model User {
   id                     String                  @id @default(cuid())
   email                  String                  @unique
@@ -27,6 +42,7 @@ model User {
   name                   String
   image                  String?
   role                   Role                    @default(STUDENT)
+  officerPosition        OfficerPosition?
   isActive               Boolean                 @default(true)
   clubId                 String?
   club                   Club?                   @relation(fields: [clubId], references: [id])
@@ -36,20 +52,23 @@ model User {
   notificationsSent      Notification[]          @relation("NotificationSender")
   notificationReads      NotificationRead[]
   pendingAssignmentsMade PendingRoleAssignment[] @relation("AssignedBy")
+  tasksAssigned          Task[]                  @relation("TaskAssignee")
+  tasksCreated           Task[]                  @relation("TaskAssigner")
   accounts               Account[]
   sessions               Session[]
 }
 
 model PendingRoleAssignment {
-  id                 String   @id @default(cuid())
-  email              String   @unique
+  id                 String           @id @default(cuid())
+  email              String           @unique
   role               Role
-  allowExternalEmail Boolean  @default(false)
+  officerPosition    OfficerPosition?
+  allowExternalEmail Boolean          @default(false)
   clubId             String?
-  club               Club?    @relation(fields: [clubId], references: [id])
+  club               Club?            @relation(fields: [clubId], references: [id])
   assignedById       String
-  assignedBy         User     @relation("AssignedBy", fields: [assignedById], references: [id])
-  assignedAt         DateTime @default(now())
+  assignedBy         User             @relation("AssignedBy", fields: [assignedById], references: [id])
+  assignedAt         DateTime         @default(now())
 }
 
 model Club {
@@ -61,6 +80,7 @@ model Club {
   events             Event[]
   notifications      Notification[]
   pendingAssignments PendingRoleAssignment[]
+  tasks              Task[]
 }
 
 model Event {
@@ -77,6 +97,7 @@ model Event {
   createdAt     DateTime       @default(now())
   attendances   Attendance[]
   notifications Notification[]
+  tasks         Task[]
 }
 
 model Attendance {
@@ -89,6 +110,27 @@ model Attendance {
   photoUrl    String
 
   @@unique([eventId, studentId])
+}
+
+model Task {
+  id           String     @id @default(cuid())
+  clubId       String
+  club         Club       @relation(fields: [clubId], references: [id])
+  eventId      String?
+  event        Event?     @relation(fields: [eventId], references: [id])
+  type         TaskType
+  assigneeId   String
+  assignee     User       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  assignedById String
+  assignedBy   User       @relation("TaskAssigner", fields: [assignedById], references: [id])
+  dueAt        DateTime?
+  status       TaskStatus @default(ASSIGNED)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([clubId, status])
+  @@index([assigneeId, status])
+  @@index([eventId, type])
 }
 
 model Notification {

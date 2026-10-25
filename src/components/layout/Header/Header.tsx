@@ -28,6 +28,7 @@ export function Header({ userImage, userName, userRole }: HeaderProps) {
   const { count: unreadCount } = useUnreadCount();
 
   const getPageTitle = (path: string) => {
+    if (path.startsWith("/dashboard")) return "Dashboard";
     if (path.startsWith("/registrations")) {
       return path.endsWith("/ticket") ? "Event ticket" : "My Registrations";
     }

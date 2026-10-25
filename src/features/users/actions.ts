@@ -17,6 +17,7 @@ import { toActionResponse } from "@/lib/security/errors";
 
 import {
   deletePendingRoleAssignment,
+  setOfficerPosition,
   setUserActive,
   setUserClub,
   updateUserRole,
@@ -33,12 +34,14 @@ import {
   PendingRoleAssignmentIdSchema,
   SetUserActiveSchema,
   SetUserClubSchema,
+  SetOfficerPositionSchema,
   UpdateUserRoleSchema,
   UserManagementPageQuerySchema,
   type AddPendingUserPayload,
   type PendingRoleAssignmentIdPayload,
   type SetUserActivePayload,
   type SetUserClubPayload,
+  type SetOfficerPositionPayload,
   type UpdateUserRolePayload,
 } from "./schemas";
 
@@ -82,6 +85,11 @@ export async function updateUserRoleAction(
       return actionConflict(
         "Developer account",
         "Developer accounts cannot be assigned through this form.",
+      );
+    if (parsed.data.role === Role.OFFICER && !target.clubId)
+      return actionConflict(
+        "Club required",
+        "Assign this user to a club before promoting them to officer.",
       );
     if (target.role === Role.ADMIN && parsed.data.role !== Role.ADMIN) {
       const remaining = await countActivePrivilegedUsers(target.id);
@@ -162,6 +170,7 @@ export async function addPendingUserAction(
     await upsertPendingRoleAssignment({
       email,
       role: parsed.data.role,
+      officerPosition: parsed.data.officerPosition,
       allowExternalEmail,
       assignedById: session.id,
       clubId: parsed.data.clubId,
@@ -196,6 +205,11 @@ export async function setUserClubAction(
     if (!parsed.success) return actionInvalid("club assignment");
     const target = await getUserById(parsed.data.userId);
     if (!target) return actionNotFound("User");
+    if (target.role === Role.OFFICER && !parsed.data.clubId)
+      return actionConflict(
+        "Club required",
+        "Officers must belong to a club. Assign another club instead of clearing it.",
+      );
     if (parsed.data.clubId) {
       const club = await getClubById(parsed.data.clubId);
       if (!club) return actionNotFound("Club");
@@ -204,6 +218,45 @@ export async function setUserClubAction(
     return { success: true };
   } catch (error) {
     return toActionResponse(error, "assign club");
+  }
+}
+
+/**
+ * Sets, replaces, or removes a club officer's position.
+ *
+ * Replacing a President clears the previous President and promotes the target
+ * in one transaction. Only Admins hold `officer.assign_president`.
+ *
+ * @param payload - The target `userId` and the new `officerPosition` (or null).
+ * @returns `success: true`, or an invalid/not-found/conflict envelope.
+ * @throws {ForbiddenError} When the caller lacks `officer.assign_president`.
+ */
+export async function setOfficerPositionAction(
+  payload: SetOfficerPositionPayload,
+): Promise<ActionStatusResponse> {
+  try {
+    await requirePermission("officer.assign_president");
+    const parsed = SetOfficerPositionSchema.safeParse(payload);
+    if (!parsed.success) return actionInvalid("officer position");
+    const target = await getUserById(parsed.data.userId);
+    if (!target) return actionNotFound("User");
+    if (target.role !== Role.OFFICER)
+      return actionConflict(
+        "Not an officer",
+        "Only an officer can hold a club position. Change the role first.",
+      );
+    if (!target.clubId)
+      return actionConflict(
+        "Club required",
+        "Assign this officer to a club before setting a position.",
+      );
+    await setOfficerPosition({
+      userId: parsed.data.userId,
+      officerPosition: parsed.data.officerPosition,
+    });
+    return { success: true };
+  } catch (error) {
+    return toActionResponse(error, "set officer position");
   }
 }
 

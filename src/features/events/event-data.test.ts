@@ -8,6 +8,7 @@ const filter = (overrides: Partial<EventFilter> = {}): EventFilter => ({
   search: "",
   host: "all",
   time: "all",
+  status: "all",
   ...overrides,
 });
 
@@ -91,5 +92,6 @@ describe("filterEvents", () => {
     expect(data.filterEvents(events, filter({ search: "science" }))).toHaveLength(1);
     expect(data.filterEvents(events, filter({ host: "organization" }))).toHaveLength(2);
     expect(data.filterEvents(events, filter({ time: "upcoming" }))).toHaveLength(11);
+    expect(data.filterEvents(events, filter({ status: "open" }))).toHaveLength(6);
   });
 });

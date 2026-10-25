@@ -14,9 +14,15 @@
 DEV - initial user
 
 ADMIN
-  -> OFFICER
+  -> OFFICER (President | plain officer)
     -> STUDENT
 ```
+
+### Officer position
+
+`Role.OFFICER` is the login role. A club officer may additionally hold the `PRESIDENT` position, and a club has at
+most one President. A plain officer has no position. Positions require a club; changing the role away from `OFFICER` or
+changing the club clears the position. Positions narrow the Officer column in the tables below; they never widen it.
 
 ---
 
@@ -71,14 +77,46 @@ own club).
 
 ### Notification
 
-> Sending notifications is an Officer and Admin capability. Every role can read notifications; `OWN_CLUB` readers see
-> organisation-wide notifications (`audience = ALL`) plus those addressed to their own club (`audience = CLUB`). Club is
-> the only scoping dimension in the system.
+> Sending notifications is a President and Admin capability. Plain officers read notifications only. Every role can read
+> notifications; `OWN_CLUB` readers see organisation-wide notifications (`audience = ALL`) plus those addressed to their
+> own club (`audience = CLUB`). Club is the only scoping dimension in the system.
 
 | Action | Admin | Officer  | Student  |
 | :----- | :---: | :------: | :------: |
-| CREATE |  YES  |   YES    |    NO    |
+| CREATE |  YES  | OWN_CLUB |    NO    |
 | READ   |  YES  | OWN_CLUB | OWN_CLUB |
+
+### Officer
+
+> Only Admins appoint, replace, or remove a club President. A replacement clears the previous President and sets the new
+> one in a single transaction.
+
+| Action           | Admin | Officer | Student |
+| :--------------- | :---: | :-----: | :-----: |
+| ASSIGN_PRESIDENT |  YES  |   NO    |   NO    |
+
+### Task
+
+> Presidents assign, reassign, and delete tasks for plain officers of their own club; Admins may do so for any club.
+> Assignees read and update their own tasks. `task.assign` also covers reassignment and deletion.
+
+| Action     | Admin | Officer  | Student |
+| :--------- | :---: | :------: | :-----: |
+| ASSIGN     |  YES  | OWN_CLUB |   NO    |
+| READ_CLUB  |  YES  | OWN_CLUB |   NO    |
+| READ_OWN   |  NO   |   YES    |   NO    |
+| UPDATE_OWN |  NO   |   YES    |   NO    |
+
+### Attendance
+
+> Presidents may scan any event in their club. Plain officers may scan only an event for which they hold an `ATTENDANCE`
+> task that is not `DONE`. Admins cannot scan. Attendance capture is not implemented yet; the scan route is gated and
+> shows a placeholder.
+
+| Action       | Admin | Officer  | Student |
+| :----------- | :---: | :------: | :-----: |
+| SCAN         |  NO   | OWN_CLUB |   NO    |
+| VIEW_RESULTS |  YES  | OWN_CLUB |   NO    |
 
 ---
 
@@ -95,3 +133,7 @@ own club).
 
 - Client-side checks (e.g. sidebar visibility) are presentation-only and never a security boundary; the server re-checks
   every request.
+
+- Position-aware checks combine the role matrix with the officer position (`canWithPosition`) and, for club-scoped
+  actions, re-read the actor's current `role`, `clubId`, and `officerPosition` from the database in
+  `requireClubPermission(...)`. A President replaced mid-session is refused on the next action.

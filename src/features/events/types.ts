@@ -48,4 +48,5 @@ export interface EventFilter {
   search: string;
   host: "all" | "organization" | "club";
   time: "upcoming" | "all";
+  status: "all" | "open";
 }

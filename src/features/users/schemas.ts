@@ -1,10 +1,14 @@
 import { z } from "zod";
 
-import { Role } from "@/generated/prisma/browser";
+import { OfficerPosition, Role } from "@/generated/prisma/browser";
 import { isAllowedEmail, SCHOOL_EMAIL_REQUIRED_MESSAGE } from "@/lib/security/email-domain";
 import { emailText, optionalText } from "@/lib/validation/form-utils";
 
 export const AssignableRoleSchema = z.enum([Role.STUDENT, Role.OFFICER, Role.ADMIN]);
+
+export const OfficerPositionSchema = z.enum([OfficerPosition.PRESIDENT]);
+
+const officerPositionSchema = OfficerPositionSchema.nullable().default(null);
 
 const cuidSchema = z.string().regex(/^c[a-z0-9]{24}$/, "Invalid user identifier");
 const clubIdSchema = z.string().regex(/^c[a-z0-9]{24}$/, "Invalid club identifier");
@@ -25,9 +29,10 @@ export const AddPendingUserSchema = z
     email: emailText("Email"),
     role: AssignableRoleSchema,
     clubId: clubIdSchema.nullable().default(null),
+    officerPosition: officerPositionSchema,
     allowExternalEmail: z.boolean().default(false),
   })
-  .superRefine(({ email, allowExternalEmail }, context) => {
+  .superRefine(({ email, allowExternalEmail, role, clubId, officerPosition }, context) => {
     if (!isAllowedEmail(email, allowExternalEmail)) {
       context.addIssue({
         code: "custom",
@@ -35,7 +40,26 @@ export const AddPendingUserSchema = z
         message: SCHOOL_EMAIL_REQUIRED_MESSAGE,
       });
     }
+    if (role === Role.OFFICER && !clubId) {
+      context.addIssue({
+        code: "custom",
+        path: ["clubId"],
+        message: "Officers must belong to a club.",
+      });
+    }
+    if (officerPosition && role !== Role.OFFICER) {
+      context.addIssue({
+        code: "custom",
+        path: ["officerPosition"],
+        message: "Only officers can hold a position.",
+      });
+    }
   });
+
+export const SetOfficerPositionSchema = z.object({
+  userId: cuidSchema,
+  officerPosition: officerPositionSchema,
+});
 
 export const SetUserClubSchema = z.object({
   userId: cuidSchema,
@@ -63,3 +87,4 @@ export type SetUserActivePayload = z.input<typeof SetUserActiveSchema>;
 export type UpdateUserRolePayload = z.input<typeof UpdateUserRoleSchema>;
 export type AddPendingUserPayload = z.input<typeof AddPendingUserSchema>;
 export type SetUserClubPayload = z.input<typeof SetUserClubSchema>;
+export type SetOfficerPositionPayload = z.input<typeof SetOfficerPositionSchema>;

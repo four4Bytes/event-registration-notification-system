@@ -160,8 +160,8 @@
   --font-weight-black: 900;
 
   /* Layout */
-  --layout-header-height: 64px;
-  --layout-sidebar-width: 320px;
+  --layout-header-height: 56px;
+  --layout-sidebar-width: 260px;
   --layout-sidebar-width-collapsed: 80px;
 
   --auth-content-max-width: 420px;

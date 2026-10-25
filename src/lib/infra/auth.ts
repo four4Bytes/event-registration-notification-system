@@ -75,6 +75,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               name: user.name ?? email,
               image: user.image,
               role,
+              officerPosition: pending?.officerPosition ?? null,
               allowExternalEmail: allowExternalEmail && !isSchoolEmail(email),
               clubId: pending?.clubId ?? null,
             },
@@ -102,7 +103,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       const user = await getAuthAdapterClient().user.findUnique({
         where: { email: token.email },
-        select: { id: true, role: true, isActive: true, clubId: true },
+        select: { id: true, role: true, isActive: true, clubId: true, officerPosition: true },
       });
 
       if (!user) return null;
@@ -111,6 +112,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       token.role = user.role;
       token.isActive = user.isActive;
       token.clubId = user.clubId;
+      token.officerPosition = user.officerPosition;
       return token;
     },
 
@@ -120,6 +122,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role ?? Role.STUDENT;
         session.user.isActive = token.isActive !== false;
         session.user.clubId = token.clubId ?? null;
+        session.user.officerPosition = token.officerPosition ?? null;
       }
       return session;
     },

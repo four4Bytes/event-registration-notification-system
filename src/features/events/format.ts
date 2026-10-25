@@ -4,6 +4,13 @@ export function formatEventDay(date: string): string {
   return formatTodayLong(new Date(date));
 }
 
+export function formatEventWeekdayShort(date: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: getAppTimeZone(),
+    weekday: "short",
+  }).format(new Date(date));
+}
+
 export function formatEventTime(date: string): string {
   return new Intl.DateTimeFormat("en-US", {
     timeZone: getAppTimeZone(),
