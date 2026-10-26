@@ -11,7 +11,8 @@ defaults.
 - Read the actual file first. Don't assume you know what's in it.
 - Make the smallest coherent change that solves the request. Avoid unrelated refactors and speculative abstractions.
 - Refractors are always accepted as long as it improves correctness, readability, maintainability and consistency.
-- Most conventions in this repository are derived from the `law-firm-management-system` project (or locally
+- Most conventions in this repository are derived from the
+  [law-firm-management-system](https://github.com/four4Bytes/law-firm-management-system)(remote) project (or locally
   `Repositories/projects/law-firm-management-system`). Adopt useful patterns and vendor utilities as needed.
 - After making changes, run only the commands the touched files need.
 
