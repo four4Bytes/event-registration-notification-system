@@ -18,7 +18,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["src/**/*.test.{ts,tsx}"],
-          exclude: ["src/stories/**"],
+          exclude: ["src/stories/**", "src/**/*.integration.test.ts"],
           setupFiles: ["./vitest.setup.ts"],
         },
       },
