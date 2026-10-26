@@ -1,7 +1,7 @@
 import { MOCK_NOW, type EventStatus, type StudentEvent } from "./types";
 
-export function getRemainingSeats(event: StudentEvent): number {
-  return Math.max(0, event.capacity - event.seatsTaken);
+export function getRemainingSeats(event: StudentEvent): number | null {
+  return event.capacity === null ? null : Math.max(0, event.capacity - event.seatsTaken);
 }
 
 export function isEventStarted(event: StudentEvent, now: string | Date = MOCK_NOW): boolean {
@@ -21,6 +21,7 @@ export function resolveEventStatus(
 ): EventStatus {
   if (event.registration?.state === "registered") return "registered";
   if (isRegistrationClosed(event, now)) return "closed";
-  if (getRemainingSeats(event) <= 0) return "full";
+  const remainingSeats = getRemainingSeats(event);
+  if (remainingSeats !== null && remainingSeats <= 0) return "full";
   return "open";
 }

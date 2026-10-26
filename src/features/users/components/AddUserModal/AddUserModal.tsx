@@ -9,7 +9,12 @@ import { Modal } from "@/components/ui/Modal/Modal";
 import { Select, SelectItem } from "@/components/ui/Select/Select";
 import { TextField } from "@/components/ui/TextField/TextField";
 import { addPendingUserAction } from "@/features/users/actions";
-import { officerPositionLabels, roleLabels } from "@/features/users/constants";
+import {
+  assignableRoles,
+  officerPositionLabels,
+  roleLabels,
+  type AssignableRole,
+} from "@/features/users/constants";
 import { AddPendingUserSchema, type AddPendingUserPayload } from "@/features/users/schemas";
 import { OfficerPosition, Role } from "@/generated/prisma/browser";
 import { useModalForm } from "@/lib/hooks/useModalForm";
@@ -22,9 +27,6 @@ import { createFieldValidator, requiredString } from "@/lib/validation/form-util
 
 import styles from "./AddUserModal.module.css";
 
-const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN];
-type AssignableRole = (typeof roles)[number];
-
 const NO_POSITION = "none";
 const validateEmailFormat = createFieldValidator(AddPendingUserSchema.shape.email);
 
@@ -32,17 +34,23 @@ interface AddUserModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSuccess?: () => void;
+  defaultRole?: AssignableRole;
 }
 
-export function AddUserModal({ isOpen, onOpenChange, onSuccess }: AddUserModalProps) {
+export function AddUserModal({
+  isOpen,
+  onOpenChange,
+  onSuccess,
+  defaultRole = Role.STUDENT,
+}: AddUserModalProps) {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<AssignableRole>(Role.STUDENT);
+  const [role, setRole] = useState<AssignableRole>(defaultRole);
   const [officerPosition, setOfficerPosition] = useState<OfficerPosition | null>(null);
   const [allowExternalEmail, setAllowExternalEmail] = useState(false);
 
   const reset = () => {
     setEmail("");
-    setRole(Role.STUDENT);
+    setRole(defaultRole);
     setOfficerPosition(null);
     setAllowExternalEmail(false);
   };
@@ -107,14 +115,14 @@ export function AddUserModal({ isOpen, onOpenChange, onSuccess }: AddUserModalPr
             value={role}
             onChange={(value) => {
               const selectedRole = String(value) as AssignableRole;
-              if (!roles.includes(selectedRole)) return;
+              if (!assignableRoles.includes(selectedRole)) return;
               setRole(selectedRole);
               if (selectedRole !== Role.OFFICER) setOfficerPosition(null);
             }}
             validate={createFieldValidator(AddPendingUserSchema.shape.role)}
             isDisabled={isPending}
           >
-            {roles.map((item) => (
+            {assignableRoles.map((item) => (
               <SelectItem key={item} id={item}>
                 {roleLabels[item]}
               </SelectItem>

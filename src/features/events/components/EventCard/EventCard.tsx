@@ -16,6 +16,12 @@ interface EventCardProps {
 
 export function EventCard({ event, className }: EventCardProps) {
   const date = formatMonthDay(event.startAt);
+  const seatAvailability =
+    event.remainingSeats === null
+      ? "No seat limit"
+      : event.remainingSeats > 0
+        ? `${event.remainingSeats} seats left`
+        : "No seats left";
 
   return (
     <Link
@@ -46,7 +52,7 @@ export function EventCard({ event, className }: EventCardProps) {
         </span>
         <span className={styles.metaItem}>
           <FaUsers aria-hidden="true" className={styles.metaIcon} />
-          {event.remainingSeats > 0 ? `${event.remainingSeats} seats left` : "No seats left"}
+          {seatAvailability}
         </span>
       </div>
     </Link>

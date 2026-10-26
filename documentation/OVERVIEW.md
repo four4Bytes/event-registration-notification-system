@@ -5,22 +5,22 @@
 The Event Registration & Notification System (KASAMA) is a single school organization's web application for publishing
 events, registering students, checking them in with a QR code, and keeping everyone informed through campus-wide
 announcements. There are no club scoping units; the system is one organization with people in four roles, one global
-President, and an Admin-run approval flow still being built out.
+President, and an Admin-run event approval flow.
 
-The foundations work end to end: identity and roles, invitations, the People page, and notifications. The active UI
-already covers the student-facing event browser, registration mock, ticket, and attendance history, plus the later
-president/task/scan phases still have contract work ahead.
+The foundations work end to end: identity and roles, invitations, the People page, notifications, and event approvals.
+The active UI already covers the student-facing event browser, registration mock, ticket, and attendance history, plus
+the later president/task/scan phases still have contract work ahead.
 
 ## Who uses it
 
 There are four account roles. Three are part of the normal workflow; the fourth exists for setup and maintenance.
 
-| Role        | Who they are                                     | What they can do today                                                                                     |
-| ----------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| **Student** | A regular member of the school community.        | Read announcements, browse events, register, and see their attendance history.                             |
-| **Officer** | A student leader, optionally the President.      | Do everything a student can, send notifications, work on events, and scan attendance on an assigned event. |
-| **Admin**   | School staff or a trusted administrator.         | Manage people, invitations, roles, the President, all tasks (once implemented), and every notification.    |
-| **Dev**     | A temporary bootstrap account used during setup. | Full access. It cannot be invited and its role cannot be changed.                                          |
+| Role        | Who they are                                     | What they can do today                                                                                                   |
+| ----------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| **Student** | A regular member of the school community.        | Read announcements, browse events, register, and see their attendance history.                                           |
+| **Officer** | A student leader, optionally the President.      | Do everything a student can, send notifications, work on events, and scan attendance on an assigned event.               |
+| **Admin**   | School staff or a trusted administrator.         | Manage people, invitations, roles, the President, event approvals, all tasks (once implemented), and every notification. |
+| **Dev**     | A temporary bootstrap account used during setup. | Full access. It cannot be invited and its role cannot be changed.                                                        |
 
 Exactly one active officer holds the global **President** position, approved by an Admin. A plain officer has no position.
 The President adds the event draft lifecycle and task assignment; both are progressively delivered through later phases.
@@ -55,12 +55,25 @@ send email yet. [NOTIFICATIONS.md](./NOTIFICATIONS.md) describes the behaviour a
 
 ### People
 
-Administrators have one **People** table that mixes existing accounts and pending invitations. From there they can
-invite someone, change a role, appoint the President with a single crown control, deactivate or reactivate an account,
-and cancel an invitation. A banner notes when no President has been appointed yet.
+Administrators have one **People** page with Officers, Students, Admins, and Pending invitations tabs. From there they
+can invite someone, change a role, appoint or replace the President with the crown control, deactivate or reactivate
+an account, cancel an invitation, or remove an Officer by demoting them to Student. Officers show a position pill
+beside the role. A banner notes when no President has been appointed yet.
 
 That area protects the system from locking itself out: the last active admin cannot be demoted or deactivated, the
 developer role cannot be assigned through the normal editor, and no one may change their own role.
+
+### Event approvals
+
+Administrators have an **Approvals** queue of events submitted for review. Each card shows the event's mechanics,
+program flow, requirements, venue, date, and who submitted it. **Approve** publishes the event immediately; **Request
+revision** requires a written comment and sends the event back to its organizer. Every decision writes an approval trail
+row with the acting administrator, the transition, the comment, and the time. Administrators may approve their own
+events; that self-approval is recorded the same way. Workflow status pills cover Draft, Submitted, Revision requested,
+Approved, Published, and Cancelled.
+
+The queue is backed by the database. Creating, editing, and submitting events is the next phase; until then the student
+event browser still uses staged data.
 
 ## Two ideas that shape the system
 
@@ -83,9 +96,10 @@ new account is created. See [ROADMAP.md](./ROADMAP.md).
 ## The current boundary: events and registration
 
 The student-facing event browser, registration, ticket, and attendance history use staged in-memory data. The database
-contains `Event` and `Attendance` models, but the running pages still render them from the in-memory dataset; the later
-phases wire the event schema, approval, registration records, QR references, task assignment, and scan flow in.
-Opening the landing page shows the same UI that will eventually be database-backed.
+contains the event workflow fields and approval trail, and the Admin approvals queue reads them live, but the student
+pages still render from the in-memory dataset; the later phases wire event submission, registration records, QR
+references, task assignment, and scan flow in. Opening the landing page shows the same UI that will eventually be
+database-backed.
 
 [ROADMAP.md](./ROADMAP.md) describes the phases still remaining.
 

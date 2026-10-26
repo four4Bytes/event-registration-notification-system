@@ -40,19 +40,31 @@ export function SeatAvailabilityCard({
 
       <p className={styles.taken}>
         <strong className={styles.takenValue}>{event.seatsTaken}</strong>
-        <span className={styles.takenLabel}>of {event.capacity} seats taken</span>
+        <span className={styles.takenLabel}>
+          {event.capacity === null
+            ? "seats taken (no capacity limit)"
+            : `of ${event.capacity} seats taken`}
+        </span>
       </p>
 
-      <progress
-        className={styles.progress}
-        value={event.seatsTaken}
-        max={event.capacity}
-        aria-label="Seats taken"
-      />
+      {event.capacity !== null && (
+        <progress
+          className={styles.progress}
+          value={event.seatsTaken}
+          max={event.capacity}
+          aria-label="Seats taken"
+        />
+      )}
 
       <p className={styles.remaining} aria-live="polite">
-        <strong>{event.remainingSeats}</strong> {event.remainingSeats === 1 ? "seat" : "seats"}{" "}
-        remaining
+        {event.remainingSeats === null ? (
+          <strong>No seat limit</strong>
+        ) : (
+          <>
+            <strong>{event.remainingSeats}</strong> {event.remainingSeats === 1 ? "seat" : "seats"}{" "}
+            remaining
+          </>
+        )}
       </p>
 
       <div className={styles.deadline}>

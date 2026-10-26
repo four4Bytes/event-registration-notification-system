@@ -27,6 +27,13 @@ describe("getRemainingSeats", () => {
   it("clamps at zero when over capacity", () => {
     expect(getRemainingSeats({ ...baseEvent, seatsTaken: 401 })).toBe(0);
   });
+
+  it("treats a null capacity as unlimited", () => {
+    const unlimitedEvent = { ...baseEvent, capacity: null, seatsTaken: 401 };
+
+    expect(getRemainingSeats(unlimitedEvent)).toBeNull();
+    expect(resolveEventStatus(unlimitedEvent)).toBe("open");
+  });
 });
 
 describe("resolveEventStatus", () => {

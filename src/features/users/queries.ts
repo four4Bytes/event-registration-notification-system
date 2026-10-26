@@ -212,3 +212,16 @@ export async function countActiveAdmins(excludeUserId?: string): Promise<number>
     },
   });
 }
+
+export async function countActiveUsersByRole(role: Role): Promise<number> {
+  return prisma.user.count({
+    where: {
+      isActive: true,
+      role,
+    },
+  });
+}
+
+export async function countPendingRoleAssignments(): Promise<number> {
+  return prisma.pendingRoleAssignment.count();
+}

@@ -23,6 +23,27 @@ enum OfficerPosition {
   PRESIDENT
 }
 
+enum EventStatus {
+  DRAFT
+  SUBMITTED
+  REVISION_REQUESTED
+  APPROVED
+  PUBLISHED
+  CANCELLED
+}
+
+enum EventApprovalAction {
+  SUBMITTED
+  APPROVED
+  REVISION_REQUESTED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  CANCELLED
+}
+
 enum TaskType {
   ATTENDANCE
   GENERAL
@@ -41,6 +62,7 @@ model User {
   allowExternalEmail     Boolean                 @default(false)
   name                   String
   image                  String?
+  studentNumber          String?                 @unique
   role                   Role                    @default(STUDENT)
   officerPosition        OfficerPosition?
   isActive               Boolean                 @default(true)
@@ -49,6 +71,8 @@ model User {
   club                   Club?                   @relation(fields: [clubId], references: [id])
   createdAt              DateTime                @default(now())
   eventsCreated          Event[]                 @relation("EventCreator")
+  eventApprovals         EventApproval[]         @relation("EventApprovalActor")
+  registrations          Registration[]
   attendances            Attendance[]
   notificationsSent      Notification[]          @relation("NotificationSender")
   notificationReads      NotificationRead[]
@@ -85,21 +109,63 @@ model Club {
 }
 
 model Event {
-  id            String         @id @default(cuid())
-  title         String
-  description   String?
-  venue         String
-  startAt       DateTime
-  endAt         DateTime?
+  id                   String          @id @default(cuid())
+  title                String
+  description          String?
+  venue                String
+  startAt              DateTime
+  endAt                DateTime?
   /// Legacy club host. New events leave this null.
-  clubId        String?
-  club          Club?          @relation(fields: [clubId], references: [id])
-  createdById   String
-  createdBy     User           @relation("EventCreator", fields: [createdById], references: [id])
-  createdAt     DateTime       @default(now())
-  attendances   Attendance[]
-  notifications Notification[]
-  tasks         Task[]
+  clubId               String?
+  club                 Club?           @relation(fields: [clubId], references: [id])
+  status               EventStatus     @default(DRAFT)
+  mechanics            String?
+  programFlow          String?
+  requirements         String?
+  publishedAt          DateTime?
+  capacity             Int?
+  registrationClosesAt DateTime?
+  createdById          String
+  createdBy            User            @relation("EventCreator", fields: [createdById], references: [id])
+  createdAt            DateTime        @default(now())
+  approvals            EventApproval[]
+  registrations        Registration[]
+  attendances          Attendance[]
+  notifications        Notification[]
+  tasks                Task[]
+
+  @@index([status, startAt, id])
+}
+
+model EventApproval {
+  id         String              @id @default(cuid())
+  eventId    String
+  event      Event               @relation(fields: [eventId], references: [id])
+  actorId    String
+  actor      User                @relation("EventApprovalActor", fields: [actorId], references: [id])
+  action     EventApprovalAction
+  fromStatus EventStatus
+  toStatus   EventStatus
+  comment    String?
+  createdAt  DateTime            @default(now())
+
+  @@index([eventId, createdAt])
+}
+
+model Registration {
+  id          String             @id @default(cuid())
+  eventId     String
+  event       Event              @relation(fields: [eventId], references: [id])
+  studentId   String
+  student     User               @relation(fields: [studentId], references: [id])
+  reference   String             @unique
+  status      RegistrationStatus @default(REGISTERED)
+  createdAt   DateTime           @default(now())
+  cancelledAt DateTime?
+
+  @@unique([eventId, studentId])
+  @@index([studentId, status])
+  @@index([eventId, status])
 }
 
 model Attendance {

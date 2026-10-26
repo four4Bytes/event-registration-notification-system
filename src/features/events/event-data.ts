@@ -55,7 +55,7 @@ export function registerForEvent(
   if (status === "full") return { success: false, reason: "full" };
   if (status === "closed") return { success: false, reason: "closed" };
 
-  const reference = event.registration?.reference ?? event.mockReference;
+  const reference = event.registration?.reference ?? event.mockReference ?? `CH-${event.id}`;
   events = events.map((candidate) =>
     candidate.id === eventId
       ? {

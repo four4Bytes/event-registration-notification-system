@@ -7,16 +7,12 @@ import { Button } from "@/components/ui/Button/Button";
 import { Modal } from "@/components/ui/Modal/Modal";
 import { Select, SelectItem } from "@/components/ui/Select/Select";
 import { updateUserRoleAction } from "@/features/users/actions";
-import { roleLabels } from "@/features/users/constants";
+import { assignableRoles, roleLabels, type AssignableRole } from "@/features/users/constants";
 import { UpdateUserRoleSchema, type UpdateUserRolePayload } from "@/features/users/schemas";
-import { Role } from "@/generated/prisma/browser";
 import { useModalForm } from "@/lib/hooks/useModalForm";
 import { createFieldValidator } from "@/lib/validation/form-utils";
 
 import styles from "./EditRoleModal.module.css";
-
-const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN];
-type AssignableRole = (typeof roles)[number];
 
 interface EditRoleModalProps {
   userId: string;
@@ -67,12 +63,12 @@ export function EditRoleModal({
             value={role}
             onChange={(value) => {
               const selectedRole = String(value) as AssignableRole;
-              if (roles.includes(selectedRole)) setRole(selectedRole);
+              if (assignableRoles.includes(selectedRole)) setRole(selectedRole);
             }}
             validate={createFieldValidator(UpdateUserRoleSchema.shape.role)}
             isDisabled={isPending}
           >
-            {roles.map((item) => (
+            {assignableRoles.map((item) => (
               <SelectItem key={item} id={item}>
                 {roleLabels[item]}
               </SelectItem>

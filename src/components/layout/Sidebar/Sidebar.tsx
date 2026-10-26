@@ -4,53 +4,34 @@ import clsx from "clsx";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import {
-  FaBars,
-  FaBell,
-  FaCalendarDays,
-  FaClipboardCheck,
-  FaHouse,
-  FaTicket,
-  FaUser,
-  FaUsers,
-  FaX,
-} from "react-icons/fa6";
+import { FaBars, FaUser, FaX } from "react-icons/fa6";
 
 import { Button } from "@/components/ui/Button/Button";
 import { useNavigationProgress } from "@/components/ui/TopProgressBar/navigation-context";
 import { useUnreadCount } from "@/features/notifications/unread-count-context";
 import { roleLabels } from "@/features/users/constants";
-import { Role } from "@/generated/prisma/browser";
-import { can, type Permission } from "@/lib/security/rbac";
+import { Role, type OfficerPosition } from "@/generated/prisma/browser";
 
 import { toggleSidebarAction } from "./actions";
+import { getVisibleNavItems } from "./nav-items";
 import { useSidebar } from "./sidebar-context";
 import styles from "./Sidebar.module.css";
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ComponentType;
-  permission?: Permission;
-}
-
-const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: FaHouse },
-  { label: "Events", href: "/events", icon: FaCalendarDays },
-  { label: "My Registrations", href: "/registrations", icon: FaTicket },
-  { label: "My Attendance", href: "/attendance", icon: FaClipboardCheck },
-  { label: "Notifications", href: "/notifications", icon: FaBell },
-  { label: "People", href: "/admin/people", icon: FaUsers, permission: "user.read" },
-];
 
 interface SidebarProps {
   initialCollapsed?: boolean;
   userName?: string | null;
   userRole?: Role | null;
+  officerPosition?: OfficerPosition | null;
   userImage?: string | null;
 }
 
-export function Sidebar({ initialCollapsed = false, userName, userRole, userImage }: SidebarProps) {
+export function Sidebar({
+  initialCollapsed = false,
+  userName,
+  userRole,
+  officerPosition,
+  userImage,
+}: SidebarProps) {
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [imgError, setImgError] = useState(false);
   const pathname = usePathname();
@@ -58,6 +39,7 @@ export function Sidebar({ initialCollapsed = false, userName, userRole, userImag
   const { startLoading } = useNavigationProgress();
   const { isOpen, close } = useSidebar();
   const { count: unreadCount } = useUnreadCount();
+  const visibleNavItems = getVisibleNavItems({ role: userRole, officerPosition });
 
   const handleToggle = () => {
     const nextState = !collapsed;
@@ -106,34 +88,32 @@ export function Sidebar({ initialCollapsed = false, userName, userRole, userImag
           <h1 className={styles.desc}>Notification System</h1>
         </div>
         <nav className={styles.navContainer}>
-          {navItems
-            .filter((item) => !item.permission || (userRole && can(userRole, item.permission)))
-            .map((item) => {
-              const showBadge = item.href === "/notifications" && unreadCount > 0;
-              return (
-                <Button
-                  key={item.href}
-                  variant="navigation"
-                  className={styles.navButton}
-                  onPress={() => handleNavClick(item.href)}
-                  data-active={pathname.startsWith(item.href)}
-                  title={collapsed ? item.label : undefined}
-                >
-                  <span>
-                    <item.icon />
-                  </span>
-                  <span className={styles.navLabel}>{item.label}</span>
-                  {showBadge && (
-                    <>
-                      <span className={styles.navBadge} aria-hidden="true">
-                        {unreadCount > 99 ? "99+" : unreadCount}
-                      </span>
-                      <span className={styles.srOnly}>{unreadCount} unread</span>
-                    </>
-                  )}
-                </Button>
-              );
-            })}
+          {visibleNavItems.map((item) => {
+            const showBadge = item.showUnreadBadge && unreadCount > 0;
+            return (
+              <Button
+                key={item.href}
+                variant="navigation"
+                className={styles.navButton}
+                onPress={() => handleNavClick(item.href)}
+                data-active={pathname.startsWith(item.href)}
+                title={collapsed ? item.label : undefined}
+              >
+                <span>
+                  <item.icon />
+                </span>
+                <span className={styles.navLabel}>{item.label}</span>
+                {showBadge && (
+                  <>
+                    <span className={styles.navBadge} aria-hidden="true">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                    <span className={styles.srOnly}>{unreadCount} unread</span>
+                  </>
+                )}
+              </Button>
+            );
+          })}
         </nav>
         <div className={styles.profileSection}>
           <div className={styles.profileAvatar}>

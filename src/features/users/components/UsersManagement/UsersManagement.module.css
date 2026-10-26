@@ -12,6 +12,13 @@
     font-size: var(--font-size-sm);
   }
 
+  .roleCell {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+
   .actions {
     display: flex;
     flex-wrap: wrap;

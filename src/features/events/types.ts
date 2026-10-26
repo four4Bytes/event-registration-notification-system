@@ -20,15 +20,15 @@ export interface StudentEvent {
   endAt: string;
   registrationOpensAt: string;
   registrationClosesAt: string;
-  capacity: number;
+  capacity: number | null;
   seatsTaken: number;
   registration: EventRegistration | null;
-  mockReference: string;
+  mockReference?: string;
 }
 
 export interface EventView extends StudentEvent {
   status: EventStatus;
-  remainingSeats: number;
+  remainingSeats: number | null;
   canCancel: boolean;
 }
 
