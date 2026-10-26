@@ -1,5 +1,5 @@
 import { isEventStarted } from "./status";
-import { MOCK_NOW, type EventView } from "./types";
+import type { EventView } from "./types";
 
 export type RegistrationTab = "upcoming" | "past" | "cancelled";
 
@@ -15,7 +15,7 @@ function byStartAt(a: EventView, b: EventView): number {
 
 export function getRegistrationGroups(
   events: EventView[],
-  now: string | Date = MOCK_NOW,
+  now: string | Date = new Date(),
 ): RegistrationGroups {
   const groups: RegistrationGroups = { upcoming: [], past: [], cancelled: [] };
 

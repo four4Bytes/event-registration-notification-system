@@ -5,6 +5,7 @@ import {
   FaClipboardCheck,
   FaHouse,
   FaListCheck,
+  FaQrcode,
   FaScroll,
   FaStamp,
   FaTicket,
@@ -33,6 +34,30 @@ const STUDENT_NAV_ITEMS: NavItem[] = [
   { label: "Events", href: "/events", icon: FaCalendarDays },
   { label: "My Registrations", href: "/registrations", icon: FaTicket },
   { label: "My Attendance", href: "/attendance", icon: FaClipboardCheck },
+  {
+    label: "Notifications",
+    href: "/notifications",
+    icon: FaBell,
+    permission: "notification.read",
+    showUnreadBadge: true,
+  },
+];
+
+const OFFICER_NAV_ITEMS: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: FaHouse },
+  { label: "Events", href: "/events", icon: FaCalendarDays },
+  {
+    label: "Attendance Scanner",
+    href: "/attendance/scanner",
+    icon: FaQrcode,
+    permission: "attendance.scan",
+  },
+  {
+    label: "Attendance Records",
+    href: "/attendance/records",
+    icon: FaUserCheck,
+    permission: "attendance.view",
+  },
   {
     label: "Notifications",
     href: "/notifications",
@@ -81,7 +106,12 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 ];
 
 export function getVisibleNavItems({ role, officerPosition }: NavVisibilityInput): NavItem[] {
-  const items = role === Role.ADMIN || role === Role.DEV ? ADMIN_NAV_ITEMS : STUDENT_NAV_ITEMS;
+  const items =
+    role === Role.ADMIN || role === Role.DEV
+      ? ADMIN_NAV_ITEMS
+      : role === Role.OFFICER
+        ? OFFICER_NAV_ITEMS
+        : STUDENT_NAV_ITEMS;
 
   return items.filter(
     (item) => !item.permission || canWithPosition(role, officerPosition, item.permission),

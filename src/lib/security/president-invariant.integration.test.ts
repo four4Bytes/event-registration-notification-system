@@ -5,7 +5,20 @@ import { describe, expect, it } from "vitest";
 import { OfficerPosition, Role } from "@/generated/prisma/browser";
 import { prisma } from "@/lib/infra/prisma";
 
-describe.skipIf(!process.env.DATABASE_URL)("global President invariant", () => {
+let dbAvailable = false;
+if (process.env.DATABASE_URL) {
+  try {
+    await prisma.$connect();
+    await prisma.$queryRaw`SELECT 1`;
+    dbAvailable = true;
+  } catch {
+    dbAvailable = false;
+  } finally {
+    await prisma.$disconnect().catch(() => {});
+  }
+}
+
+describe.skipIf(!dbAvailable)("global President invariant", () => {
   it("rejects a raw second President and rolls the transaction back", async () => {
     const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 

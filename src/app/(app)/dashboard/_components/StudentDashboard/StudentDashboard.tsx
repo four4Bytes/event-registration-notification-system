@@ -19,10 +19,9 @@ import { Link } from "@/components/ui/Link/Link";
 import { attendanceRecords, getAttendanceSummary } from "@/features/events/attendance-data";
 import { EventCard } from "@/features/events/components/EventCard/EventCard";
 import { EventStatusPill } from "@/features/events/components/EventStatusPill/EventStatusPill";
-import { useEvents } from "@/features/events/event-data";
 import { formatEventTimeRange, formatEventWeekdayShort } from "@/features/events/format";
 import { getRegistrationGroups } from "@/features/events/registrations";
-import { MOCK_NOW } from "@/features/events/types";
+import type { EventView } from "@/features/events/types";
 import { useUnreadCount } from "@/features/notifications/unread-count-context";
 import { toastError, toastSuccess } from "@/lib/hooks/toast-utils";
 import { formatMonthDay, timeAgo } from "@/lib/primitives/date";
@@ -42,6 +41,7 @@ interface StudentDashboardProps {
   greeting: string;
   userName: string | null;
   notifications: DashboardNotification[];
+  events: EventView[];
 }
 
 interface DashboardStat {
@@ -55,7 +55,7 @@ interface DashboardStat {
 }
 
 function getDaysUntil(date: string): number {
-  return Math.max(0, Math.ceil((new Date(date).getTime() - new Date(MOCK_NOW).getTime()) / DAY_MS));
+  return Math.max(0, Math.ceil((new Date(date).getTime() - Date.now()) / DAY_MS));
 }
 
 function copyReference(reference: string) {
@@ -65,8 +65,12 @@ function copyReference(reference: string) {
   );
 }
 
-export function StudentDashboard({ greeting, userName, notifications }: StudentDashboardProps) {
-  const events = useEvents();
+export function StudentDashboard({
+  greeting,
+  userName,
+  notifications,
+  events,
+}: StudentDashboardProps) {
   const { count: unreadCount } = useUnreadCount();
   const attendance = getAttendanceSummary(attendanceRecords);
   const groups = getRegistrationGroups(events);

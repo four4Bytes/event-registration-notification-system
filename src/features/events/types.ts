@@ -32,17 +32,6 @@ export interface EventView extends StudentEvent {
   canCancel: boolean;
 }
 
-export type EventDetailData = Pick<
-  StudentEvent,
-  "title" | "organizer" | "description" | "venue" | "startAt" | "endAt"
->;
-
-export type EventMutationFailureReason =
-  "not_found" | "full" | "closed" | "started" | "not_registered";
-
-export type EventMutationResult =
-  { success: true; event: EventView } | { success: false; reason: EventMutationFailureReason };
-
 export interface EventFilter {
   search: string;
   time: "upcoming" | "all";

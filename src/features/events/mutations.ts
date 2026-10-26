@@ -1,4 +1,9 @@
-import { EventApprovalAction, EventStatus, RegistrationStatus } from "@/generated/prisma/browser";
+import {
+  AttendanceMethod,
+  EventApprovalAction,
+  EventStatus,
+  RegistrationStatus,
+} from "@/generated/prisma/browser";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/infra/prisma";
 
@@ -384,4 +389,77 @@ export async function cancelRegistration(
 
     return { ok: true };
   });
+}
+
+export interface AttendanceRecordPayload {
+  eventId: string;
+  reference: string;
+  method: AttendanceMethod;
+  recordedById: string;
+}
+
+export type AttendanceRecordResult =
+  | { ok: true; checkedInAt: Date }
+  | {
+      ok: false;
+      reason: "not_found" | "wrong_event" | "not_registered" | "not_published" | "already_attended";
+    };
+
+/**
+ * Records attendance for a verified registration reference.
+ *
+ * The `Attendance` unique constraint on `(eventId, studentId)` is the
+ * concurrency boundary: two officers scanning the same reference produce one
+ * row and one `already_attended` result. Validation and the write are kept on
+ * a single connection path so a cancelled registration or unpublished event
+ * cannot slip through between checks.
+ */
+export async function recordAttendance(
+  payload: AttendanceRecordPayload,
+): Promise<AttendanceRecordResult> {
+  const { eventId, reference, method, recordedById } = payload;
+
+  const registration = await prisma.registration.findUnique({
+    where: { reference },
+    select: {
+      eventId: true,
+      studentId: true,
+      status: true,
+      event: { select: { status: true } },
+    },
+  });
+
+  if (!registration) return { ok: false, reason: "not_found" };
+  if (registration.eventId !== eventId) return { ok: false, reason: "wrong_event" };
+  if (registration.status !== RegistrationStatus.REGISTERED) {
+    return { ok: false, reason: "not_registered" };
+  }
+  if (registration.event.status !== EventStatus.PUBLISHED) {
+    return { ok: false, reason: "not_published" };
+  }
+
+  const existing = await prisma.attendance.findUnique({
+    where: { eventId_studentId: { eventId, studentId: registration.studentId } },
+    select: { id: true },
+  });
+  if (existing) return { ok: false, reason: "already_attended" };
+
+  try {
+    const created = await prisma.attendance.create({
+      data: {
+        eventId,
+        studentId: registration.studentId,
+        method,
+        recordedById,
+        photoUrl: "",
+      },
+      select: { checkedInAt: true },
+    });
+    return { ok: true, checkedInAt: created.checkedInAt };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { ok: false, reason: "already_attended" };
+    }
+    throw error;
+  }
 }

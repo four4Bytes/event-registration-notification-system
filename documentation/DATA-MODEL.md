@@ -60,8 +60,10 @@ An event describes something happening at a place and time. It has a title, opti
 optional end time, and the user who created it. In the active UI the organizer is shown as KASAMA or the creator name;
 there is no club host.
 
-Attendance records a check-in: the event, the user, a check-in time, and a required photo reference. It is not a
-registration or RSVP, and the application does not create attendance rows outside the seed data yet.
+Attendance records a check-in: the event, the user, a check-in time, the entry method (`QR` or `MANUAL`), and the
+recording officer. The legacy photo reference column remains required but is written empty for new check-ins. It is not
+a registration or RSVP; a check-in requires an active registration for the same event. The `(eventId, studentId)` unique
+constraint is the duplicate boundary, so two concurrent scans produce one row and one `already attended` result.
 
 ### Notifications and reads
 
@@ -102,16 +104,13 @@ the "No President appointed" state until another one is appointed.
 **Read state.** Opening a notification creates or updates the user's read receipt. The feed uses those receipts to show
 read and unread items.
 
-## Event groundwork
+## Event attendance workflow
 
-The `Event`, `Attendance`, and `Task` models and their seed data are preparation for the still-open event, registration,
-task, and scan phases. The schema does not yet model event status, approval records, mechanics, capacity, registration
-deadlines, or a registration state such as registered or cancelled; these live in separate applied migrations that the
-schema handoff will reconcile.
-
-`Attendance` answers "who checked in?", not "who said they were coming?". A future registration feature will need its
-own model or a deliberate decision to extend attendance. [ROADMAP.md](./ROADMAP.md) lists that and the other open
-questions.
+The `Event`, `Registration`, `Attendance`, and `Task` models back the event lifecycle, registration, and officer
+attendance workflow. `Registration` is the source of truth for "who said they were coming?" and owns the opaque
+`KASAMA-…` reference encoded in the ticket QR. `Attendance` answers "who checked in?" and is only written after the
+server resolves an active registration for the selected published event. Officer attendance pages read persisted rows
+only; see [ARCHITECTURE.md](./ARCHITECTURE.md) for the page and action boundaries.
 
 ## What is not modelled
 

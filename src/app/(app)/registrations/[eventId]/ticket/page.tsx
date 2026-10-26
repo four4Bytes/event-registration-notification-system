@@ -1,5 +1,8 @@
+import { notFound } from "next/navigation";
+
 import { EventTicket } from "@/features/events/components/EventTicket/EventTicket";
-import { auth } from "@/lib/infra/auth";
+import { getRegistrationTicket } from "@/features/events/queries";
+import { requirePagePermission } from "@/lib/security/auth-guards";
 
 interface TicketPageProps {
   params: Promise<{ eventId: string }>;
@@ -7,13 +10,17 @@ interface TicketPageProps {
 
 export default async function TicketPage({ params }: TicketPageProps) {
   const { eventId } = await params;
-  const session = await auth();
+  const actor = await requirePagePermission("registration.read_own");
+  const ticket = await getRegistrationTicket(eventId, actor.id);
+
+  if (!ticket) notFound();
 
   return (
     <EventTicket
-      eventId={eventId}
-      attendeeName={session?.user?.name ?? "Student"}
-      attendeeEmail={session?.user?.email ?? ""}
+      event={ticket.event}
+      reference={ticket.registration.reference}
+      attendeeName={actor.name}
+      attendeeEmail={actor.email}
     />
   );
 }

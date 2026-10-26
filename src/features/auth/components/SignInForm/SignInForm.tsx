@@ -12,7 +12,7 @@ interface SignInFormProps {
   loginHint?: string;
 }
 
-export function SignInForm({ callbackUrl = "/notifications", loginHint }: SignInFormProps) {
+export function SignInForm({ callbackUrl = "/dashboard", loginHint }: SignInFormProps) {
   const authorizationParams = loginHint
     ? { login_hint: loginHint, prompt: "select_account" }
     : undefined;

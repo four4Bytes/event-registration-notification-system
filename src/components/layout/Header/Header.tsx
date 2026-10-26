@@ -32,6 +32,8 @@ export function Header({ userImage, userName, userRole }: HeaderProps) {
     if (path.startsWith("/registrations")) {
       return path.endsWith("/ticket") ? "Event ticket" : "My Registrations";
     }
+    if (path.startsWith("/attendance/scanner")) return "Attendance Scanner";
+    if (path.startsWith("/attendance/records")) return "Attendance Records";
     if (path.startsWith("/attendance")) return "My Attendance";
     if (path.startsWith("/notifications")) return "Notifications";
     if (path === "/events") return "Events";

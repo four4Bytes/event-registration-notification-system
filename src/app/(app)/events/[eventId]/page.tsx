@@ -1,7 +1,9 @@
+import { notFound } from "next/navigation";
+
 import { EventDetailView } from "@/features/events/components/EventDetailView/EventDetailView";
-import { initialEvents } from "@/features/events/initial-events";
-import { getEventById } from "@/features/events/queries";
-import type { EventDetailData } from "@/features/events/types";
+import { getPublishedEventById } from "@/features/events/queries";
+import { Role } from "@/generated/prisma/browser";
+import { auth } from "@/lib/infra/auth";
 
 interface EventDetailPageProps {
   params: Promise<{ eventId: string }>;
@@ -9,23 +11,13 @@ interface EventDetailPageProps {
 
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
   const { eventId } = await params;
-  const dbEvent = await getEventById(eventId);
+  const session = await auth();
+  const isStudent = session?.user?.role === Role.STUDENT;
+  const event = await getPublishedEventById(eventId, {
+    studentId: isStudent ? session.user.id : undefined,
+  });
 
-  if (!dbEvent) {
-    return <EventDetailView eventId={eventId} />;
-  }
+  if (!event) notFound();
 
-  const displayEvent: EventDetailData = {
-    title: dbEvent.title,
-    organizer: dbEvent.organizer,
-    description: dbEvent.description ?? "",
-    venue: dbEvent.venue,
-    startAt: dbEvent.startAt.toISOString(),
-    endAt: (dbEvent.endAt ?? dbEvent.startAt).toISOString(),
-  };
-
-  // shortcut: seat data is shared by title until events store capacity/registration in the DB.
-  const matchingEvent = initialEvents.find((event) => event.title === dbEvent.title);
-
-  return <EventDetailView eventId={matchingEvent?.id ?? eventId} displayEvent={displayEvent} />;
+  return <EventDetailView event={event} canRegister={isStudent} />;
 }

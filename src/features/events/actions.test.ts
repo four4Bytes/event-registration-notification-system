@@ -5,6 +5,7 @@ import {
   actionConflict,
   actionError,
   actionForbidden,
+  actionInvalid,
   actionNotFound,
 } from "@/lib/security/action-response";
 import { ForbiddenError } from "@/lib/security/errors";
@@ -15,11 +16,13 @@ import {
   cancelRegistrationAction,
   createEventAction,
   getEventPageAction,
+  recordAttendanceAction,
   registerForEventAction,
   requestEventRevisionAction,
   submitEventAction,
   unpublishEventAction,
   updateEventAction,
+  verifyAttendanceAction,
 } from "./actions";
 
 const guards = vi.hoisted(() => ({
@@ -35,10 +38,12 @@ const mutations = vi.hoisted(() => ({
   cancelEvent: vi.fn(),
   createRegistration: vi.fn(),
   cancelRegistration: vi.fn(),
+  recordAttendance: vi.fn(),
 }));
 
 const queries = vi.hoisted(() => ({
   getEventPage: vi.fn(),
+  getAttendanceVerification: vi.fn(),
 }));
 
 vi.mock("@/lib/security/auth-guards", () => ({
@@ -54,10 +59,12 @@ vi.mock("./mutations", () => ({
   cancelEvent: mutations.cancelEvent,
   createRegistration: mutations.createRegistration,
   cancelRegistration: mutations.cancelRegistration,
+  recordAttendance: mutations.recordAttendance,
 }));
 
 vi.mock("./queries", () => ({
   getEventPage: queries.getEventPage,
+  getAttendanceVerification: queries.getAttendanceVerification,
 }));
 
 const actor = {
@@ -96,7 +103,9 @@ beforeEach(() => {
   mutations.cancelEvent.mockReset();
   mutations.createRegistration.mockReset();
   mutations.cancelRegistration.mockReset();
+  mutations.recordAttendance.mockReset();
   queries.getEventPage.mockReset();
+  queries.getAttendanceVerification.mockReset();
   guards.requirePermission.mockResolvedValue(actor);
   mutations.approveEvent.mockResolvedValue({ ok: true, status: "PUBLISHED" });
   mutations.requestEventRevision.mockResolvedValue({ ok: true, status: "REVISION_REQUESTED" });
@@ -490,5 +499,118 @@ describe("cancelRegistrationAction", () => {
     mutations.cancelRegistration.mockResolvedValue({ ok: false, reason });
 
     await expect(cancelRegistrationAction({ eventId })).resolves.toEqual(expected);
+  });
+});
+
+describe("verifyAttendanceAction", () => {
+  const payload = { eventId, reference: "KASAMA-ABC123" };
+  const verification = {
+    eventId,
+    eventTitle: "Annual Science Fair 2026",
+    reference: "KASAMA-ABC123",
+    studentName: "Maria Santos",
+    studentNumber: "20260001",
+    alreadyCheckedInAt: null,
+  };
+
+  it("returns the verified student summary", async () => {
+    queries.getAttendanceVerification.mockResolvedValue({ ok: true, verification });
+
+    await expect(verifyAttendanceAction(payload)).resolves.toEqual({
+      success: true,
+      data: verification,
+    });
+    expect(guards.requirePermission).toHaveBeenCalledWith("attendance.scan", "attendance.manual");
+  });
+
+  it("maps an unknown reference to a not-found envelope", async () => {
+    queries.getAttendanceVerification.mockResolvedValue({ ok: false, reason: "not_found" });
+
+    await expect(verifyAttendanceAction(payload)).resolves.toEqual(
+      actionError(
+        "not_found",
+        "Reference not found",
+        "No registration matches this reference. Check the code and try again.",
+      ),
+    );
+  });
+
+  it("maps a reference from another event to a conflict envelope", async () => {
+    queries.getAttendanceVerification.mockResolvedValue({ ok: false, reason: "wrong_event" });
+
+    await expect(verifyAttendanceAction(payload)).resolves.toEqual(
+      actionConflict(
+        "Reference belongs to another event",
+        "Switch to the event this student registered for, then try again.",
+      ),
+    );
+  });
+
+  it("rejects an empty reference before querying", async () => {
+    await expect(verifyAttendanceAction({ eventId, reference: "   " })).resolves.toEqual(
+      actionInvalid("attendance reference"),
+    );
+    expect(queries.getAttendanceVerification).not.toHaveBeenCalled();
+  });
+
+  it("returns the forbidden envelope when the caller lacks attendance permissions", async () => {
+    guards.requirePermission.mockRejectedValue(new ForbiddenError());
+
+    await expect(verifyAttendanceAction(payload)).resolves.toEqual(actionForbidden());
+  });
+});
+
+describe("recordAttendanceAction", () => {
+  const checkedInAt = new Date("2026-11-12T08:30:00+08:00");
+  const payload = { eventId, reference: "KASAMA-ABC123", method: "MANUAL" as const };
+
+  it("records attendance for the signed-in officer", async () => {
+    mutations.recordAttendance.mockResolvedValue({ ok: true, checkedInAt });
+
+    await expect(recordAttendanceAction(payload)).resolves.toEqual({
+      success: true,
+      data: { checkedInAt },
+    });
+    expect(mutations.recordAttendance).toHaveBeenCalledWith({
+      eventId,
+      reference: "KASAMA-ABC123",
+      method: "MANUAL",
+      recordedById: actor.id,
+    });
+  });
+
+  it("maps a duplicate check-in to a conflict envelope", async () => {
+    mutations.recordAttendance.mockResolvedValue({ ok: false, reason: "already_attended" });
+
+    await expect(recordAttendanceAction(payload)).resolves.toEqual(
+      actionConflict(
+        "Already checked in",
+        "Attendance for this student was already recorded for this event.",
+      ),
+    );
+  });
+
+  it("maps a cancelled registration to a conflict envelope", async () => {
+    mutations.recordAttendance.mockResolvedValue({ ok: false, reason: "not_registered" });
+
+    await expect(recordAttendanceAction(payload)).resolves.toEqual(
+      actionConflict(
+        "Registration is not active",
+        "This registration was cancelled, so attendance cannot be recorded.",
+      ),
+    );
+  });
+
+  it("rejects an invalid payload before writing", async () => {
+    await expect(
+      recordAttendanceAction({ eventId: "not-an-id", reference: "KASAMA-ABC123", method: "QR" }),
+    ).resolves.toEqual(actionInvalid("attendance"));
+    expect(mutations.recordAttendance).not.toHaveBeenCalled();
+  });
+
+  it("returns the forbidden envelope when the caller lacks attendance permissions", async () => {
+    guards.requirePermission.mockRejectedValue(new ForbiddenError());
+
+    await expect(recordAttendanceAction(payload)).resolves.toEqual(actionForbidden());
   });
 });
