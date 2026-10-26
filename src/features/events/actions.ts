@@ -3,138 +3,397 @@
 import type { PageQuery } from "@/lib/primitives/types";
 import {
   actionConflict,
-  actionForbidden,
+  actionError,
   actionInvalid,
   actionNotFound,
+  type ActionDataResponse,
   type ActionStatusResponse,
 } from "@/lib/security/action-response";
 import { requirePermission } from "@/lib/security/auth-guards";
 import { toActionResponse } from "@/lib/security/errors";
 
-import { createEvent, deleteEvent, updateEvent } from "./mutations";
-import { getEventById, getEventPage, type EventPage } from "./queries";
 import {
+  approveEvent,
+  cancelEvent,
+  cancelRegistration,
+  createEvent,
+  createRegistration,
+  requestEventRevision,
+  submitEvent,
+  updateEvent,
+} from "./mutations";
+import { getEventPage, type EventPage } from "./queries";
+import {
+  ApproveEventSchema,
+  CancelEventSchema,
+  CancelRegistrationSchema,
   CreateEventSchema,
-  EventIdSchema,
   EventPageQuerySchema,
+  RegisterForEventSchema,
+  RequestEventRevisionSchema,
+  SubmitEventSchema,
+  UnpublishEventSchema,
   UpdateEventSchema,
+  type ApproveEventPayload,
+  type CancelEventPayload,
+  type CancelRegistrationPayload,
   type CreateEventPayload,
-  type EventIdPayload,
+  type RegisterForEventPayload,
+  type RequestEventRevisionPayload,
+  type SubmitEventPayload,
+  type UnpublishEventPayload,
   type UpdateEventPayload,
 } from "./schemas";
-import { buildEventScope, canManageEvent } from "./scope";
 
-/**
- * Reads a cursor page of events visible to the signed-in user.
- *
- * @param query - Search, sort, filter, cursor, and page-size parameters.
- * @returns A cursor page of events scoped to the caller's role and club.
- * @throws When the caller lacks `event.read` or `query` fails validation.
- */
-export async function getEventPageAction(query: PageQuery): Promise<EventPage> {
-  const session = await requirePermission("event.read");
-  const parsed = EventPageQuerySchema.safeParse(query);
-  if (!parsed.success) throw new Error("Invalid query parameters");
-  return getEventPage({ scope: buildEventScope(session), query: parsed.data });
+function approvalFailure(reason: "not_found" | "not_submitted"): ActionStatusResponse {
+  if (reason === "not_found") return actionNotFound("Event");
+  return actionConflict(
+    "Event is not awaiting approval",
+    "Another administrator may have already reviewed it. Refresh the queue and try again.",
+  );
+}
+
+function revisionFailure(reason: "not_found" | "not_reviewable"): ActionStatusResponse {
+  if (reason === "not_found") return actionNotFound("Event");
+  return actionConflict(
+    "Event cannot be sent for revision",
+    "Only submitted or published events can be sent back for revision.",
+  );
+}
+
+function writeFailure(reason: "not_found" | "not_editable"): ActionStatusResponse {
+  if (reason === "not_found") return actionNotFound("Event");
+  return actionConflict(
+    "Event can no longer be edited",
+    "Only drafts and revision requests can be edited.",
+  );
+}
+
+function submitFailure(
+  reason: "not_found" | "not_submittable" | "missing_details",
+): ActionStatusResponse {
+  if (reason === "not_found") return actionNotFound("Event");
+  if (reason === "missing_details") {
+    return actionError(
+      "validation",
+      "Event is missing required details",
+      "Add the mechanics, program flow, and requirements before submitting.",
+    );
+  }
+  return actionConflict(
+    "Event cannot be submitted",
+    "Only drafts and revision requests can be submitted for approval.",
+  );
+}
+
+function cancelFailure(reason: "not_found" | "already_cancelled"): ActionStatusResponse {
+  if (reason === "not_found") return actionNotFound("Event");
+  return actionConflict("Event is already cancelled", "Refresh the page to see the latest status.");
+}
+
+function registrationCreateFailure(
+  reason: "not_found" | "not_published" | "started" | "closed" | "full" | "already_registered",
+): ActionStatusResponse {
+  switch (reason) {
+    case "not_found":
+      return actionNotFound("Event");
+    case "not_published":
+      return actionConflict(
+        "Event is not open for registration",
+        "It may have been unpublished or cancelled.",
+      );
+    case "started":
+      return actionConflict("Registration has closed", "This event has already started.");
+    case "closed":
+      return actionConflict("Registration has closed", "The registration deadline has passed.");
+    case "full":
+      return actionConflict(
+        "Event is full",
+        "All seats are taken. Try another event or check back later.",
+      );
+    case "already_registered":
+      return actionConflict(
+        "You're already registered",
+        "Open My Registrations to view your ticket.",
+      );
+  }
+}
+
+function registrationCancelFailure(
+  reason: "not_found" | "not_registered" | "started" | "attended",
+): ActionStatusResponse {
+  switch (reason) {
+    case "not_found":
+      return actionNotFound("Registration");
+    case "not_registered":
+      return actionConflict("Registration is not active", "It may have already been cancelled.");
+    case "started":
+      return actionConflict(
+        "Registration can no longer be cancelled",
+        "The event has already started.",
+      );
+    case "attended":
+      return actionConflict(
+        "Attendance is already recorded",
+        "Contact a KASAMA officer if you need help.",
+      );
+  }
 }
 
 /**
- * Creates an event and its public QR token.
+ * Approves a submitted event, publishing it immediately and recording the actor.
  *
- * Officers always create events for their own club; admins and developers may
- * target any club or leave it organisation-wide.
+ * @param payload - The event id and an optional approval comment.
+ * @returns `success: true`, or an invalid/not-found/conflict envelope.
+ * @throws {ForbiddenError} When the caller lacks `event.approve`.
+ */
+export async function approveEventAction(
+  payload: ApproveEventPayload,
+): Promise<ActionStatusResponse> {
+  try {
+    const actor = await requirePermission("event.approve");
+    const parsed = ApproveEventSchema.safeParse(payload);
+    if (!parsed.success) return actionInvalid("event approval");
+    const result = await approveEvent({
+      eventId: parsed.data.eventId,
+      actorId: actor.id,
+      comment: parsed.data.comment,
+    });
+    if (!result.ok) return approvalFailure(result.reason);
+    return { success: true };
+  } catch (error) {
+    return toActionResponse(error, "approve event");
+  }
+}
+
+/**
+ * Sends a submitted or published event back for revision with a required comment.
  *
- * @param payload - Title, description, venue, start, optional Facebook link, and club.
- * @returns `success: true`, or an invalid/conflict envelope.
+ * @param payload - The event id and the revision comment.
+ * @returns `success: true`, or an invalid/not-found/conflict envelope.
+ * @throws {ForbiddenError} When the caller lacks `event.approve`.
+ */
+export async function requestEventRevisionAction(
+  payload: RequestEventRevisionPayload,
+): Promise<ActionStatusResponse> {
+  try {
+    const actor = await requirePermission("event.approve");
+    const parsed = RequestEventRevisionSchema.safeParse(payload);
+    if (!parsed.success) return actionInvalid("event revision");
+    const result = await requestEventRevision({
+      eventId: parsed.data.eventId,
+      actorId: actor.id,
+      comment: parsed.data.comment,
+    });
+    if (!result.ok) return revisionFailure(result.reason);
+    return { success: true };
+  } catch (error) {
+    return toActionResponse(error, "request event revision");
+  }
+}
+
+/**
+ * Unpublishes a published event by sending it back for revision.
+ *
+ * @param payload - The event id and the required unpublish comment.
+ * @returns `success: true`, or an invalid/not-found/conflict envelope.
+ * @throws {ForbiddenError} When the caller lacks `event.approve`.
+ */
+export async function unpublishEventAction(
+  payload: UnpublishEventPayload,
+): Promise<ActionStatusResponse> {
+  try {
+    const actor = await requirePermission("event.approve");
+    const parsed = UnpublishEventSchema.safeParse(payload);
+    if (!parsed.success) return actionInvalid("event unpublish");
+    const result = await requestEventRevision({
+      eventId: parsed.data.eventId,
+      actorId: actor.id,
+      comment: parsed.data.comment,
+    });
+    if (!result.ok) {
+      if (result.reason === "not_reviewable") {
+        return actionConflict(
+          "Event cannot be unpublished",
+          "Only submitted or published events can be sent back for revision.",
+        );
+      }
+      return actionNotFound("Event");
+    }
+    return { success: true };
+  } catch (error) {
+    return toActionResponse(error, "unpublish event");
+  }
+}
+
+/**
+ * Reads one cursor page of events for the admin event list.
+ *
+ * @param query - Search, cursor, page size, and status filters.
+ * @returns The matching event rows and the next cursor.
+ * @throws {ForbiddenError} When the caller lacks `event.read_all`.
+ */
+export async function getEventPageAction(query: PageQuery): Promise<EventPage> {
+  await requirePermission("event.read_all");
+  const parsed = EventPageQuerySchema.safeParse(query);
+  if (!parsed.success) throw new Error("Invalid query parameters");
+  return getEventPage({
+    search: parsed.data.search,
+    cursor: parsed.data.cursor,
+    pageSize: parsed.data.pageSize,
+    status: parsed.data.filters?.status,
+  });
+}
+
+/**
+ * Creates a draft event owned by the signed-in user.
+ *
+ * @param payload - The event fields and optional capacity/deadline.
+ * @returns The created event id, or an invalid/forbidden envelope.
  * @throws {ForbiddenError} When the caller lacks `event.create`.
  */
 export async function createEventAction(
   payload: CreateEventPayload,
-): Promise<ActionStatusResponse> {
+): Promise<ActionDataResponse<{ eventId: string }>> {
   try {
-    const session = await requirePermission("event.create");
+    const actor = await requirePermission("event.create");
     const parsed = CreateEventSchema.safeParse(payload);
     if (!parsed.success) return actionInvalid("event");
-
-    const scope = buildEventScope(session);
-    const clubId = scope.viewAll ? parsed.data.clubId : session.clubId;
-    if (!scope.viewAll && !clubId) {
-      return actionConflict(
-        "No club assigned",
-        "Ask an administrator to assign you to a club before creating events.",
-      );
-    }
-
-    await createEvent({
-      title: parsed.data.title,
-      description: parsed.data.description ?? null,
-      venue: parsed.data.venue,
-      startAt: parsed.data.startAt,
-      facebookUrl: parsed.data.facebookUrl ?? null,
-      clubId,
-      createdById: session.id,
+    const result = await createEvent({
+      ...parsed.data,
+      startAt: new Date(parsed.data.startAt),
+      endAt: parsed.data.endAt ? new Date(parsed.data.endAt) : null,
+      registrationClosesAt: parsed.data.registrationClosesAt
+        ? new Date(parsed.data.registrationClosesAt)
+        : null,
+      createdById: actor.id,
     });
-    return { success: true };
+    if (!result.ok) return writeFailure(result.reason);
+    return { success: true, data: { eventId: result.eventId } };
   } catch (error) {
     return toActionResponse(error, "create event");
   }
 }
 
 /**
- * Updates an event the caller is allowed to manage.
+ * Updates a draft or revision-requested event.
  *
- * @param payload - The event id plus the fields to write.
- * @returns `success: true`, or an invalid/not-found/forbidden envelope.
- * @throws {ForbiddenError} When the caller lacks `event.update`.
+ * @param payload - The event id and editable event fields.
+ * @returns The updated event id, or an invalid/not-found/conflict envelope.
+ * @throws {ForbiddenError} When the caller lacks `event.edit`.
  */
 export async function updateEventAction(
   payload: UpdateEventPayload,
-): Promise<ActionStatusResponse> {
+): Promise<ActionDataResponse<{ eventId: string }>> {
   try {
-    const session = await requirePermission("event.update");
+    await requirePermission("event.edit");
     const parsed = UpdateEventSchema.safeParse(payload);
     if (!parsed.success) return actionInvalid("event");
-
-    const existing = await getEventById(parsed.data.eventId);
-    if (!existing) return actionNotFound("Event");
-
-    const scope = buildEventScope(session);
-    if (!canManageEvent(scope, existing)) return actionForbidden();
-
-    await updateEvent({
-      eventId: parsed.data.eventId,
-      title: parsed.data.title,
-      description: parsed.data.description ?? null,
-      venue: parsed.data.venue,
-      startAt: parsed.data.startAt,
-      facebookUrl: parsed.data.facebookUrl ?? null,
-      clubId: scope.viewAll ? parsed.data.clubId : existing.clubId,
+    const result = await updateEvent({
+      ...parsed.data,
+      startAt: new Date(parsed.data.startAt),
+      endAt: parsed.data.endAt ? new Date(parsed.data.endAt) : null,
+      registrationClosesAt: parsed.data.registrationClosesAt
+        ? new Date(parsed.data.registrationClosesAt)
+        : null,
     });
-    return { success: true };
+    if (!result.ok) return writeFailure(result.reason);
+    return { success: true, data: { eventId: result.eventId } };
   } catch (error) {
     return toActionResponse(error, "update event");
   }
 }
 
 /**
- * Deletes an event. Restricted to administrators and developers.
+ * Submits a draft or revision-requested event for approval.
  *
- * @param payload - The `eventId` to delete.
- * @returns `success: true`, or an invalid/not-found/forbidden envelope.
- * @throws {ForbiddenError} When the caller lacks `event.delete`.
+ * @param payload - The event id.
+ * @returns `success: true`, or an invalid/not-found/conflict envelope.
+ * @throws {ForbiddenError} When the caller lacks `event.submit`.
  */
-export async function deleteEventAction(payload: EventIdPayload): Promise<ActionStatusResponse> {
+export async function submitEventAction(
+  payload: SubmitEventPayload,
+): Promise<ActionStatusResponse> {
   try {
-    await requirePermission("event.delete");
-    const parsed = EventIdSchema.safeParse(payload);
-    if (!parsed.success) return actionInvalid("event");
-
-    const existing = await getEventById(parsed.data.eventId);
-    if (!existing) return actionNotFound("Event");
-
-    await deleteEvent(parsed.data.eventId);
+    const actor = await requirePermission("event.submit");
+    const parsed = SubmitEventSchema.safeParse(payload);
+    if (!parsed.success) return actionInvalid("event submission");
+    const result = await submitEvent({ eventId: parsed.data.eventId, actorId: actor.id });
+    if (!result.ok) return submitFailure(result.reason);
     return { success: true };
   } catch (error) {
-    return toActionResponse(error, "delete event");
+    return toActionResponse(error, "submit event");
+  }
+}
+
+/**
+ * Cancels an event and records the cancellation in its approval trail.
+ *
+ * @param payload - The event id.
+ * @returns `success: true`, or an invalid/not-found/conflict envelope.
+ * @throws {ForbiddenError} When the caller lacks `event.cancel`.
+ */
+export async function cancelEventAction(
+  payload: CancelEventPayload,
+): Promise<ActionStatusResponse> {
+  try {
+    const actor = await requirePermission("event.cancel");
+    const parsed = CancelEventSchema.safeParse(payload);
+    if (!parsed.success) return actionInvalid("event cancellation");
+    const result = await cancelEvent({ eventId: parsed.data.eventId, actorId: actor.id });
+    if (!result.ok) return cancelFailure(result.reason);
+    return { success: true };
+  } catch (error) {
+    return toActionResponse(error, "cancel event");
+  }
+}
+
+/**
+ * Registers the signed-in student for a published event.
+ *
+ * @param payload - The event id.
+ * @returns The opaque registration reference, or a conflict envelope.
+ * @throws {ForbiddenError} When the caller lacks `registration.create`.
+ */
+export async function registerForEventAction(
+  payload: RegisterForEventPayload,
+): Promise<ActionDataResponse<{ reference: string }>> {
+  try {
+    const actor = await requirePermission("registration.create");
+    const parsed = RegisterForEventSchema.safeParse(payload);
+    if (!parsed.success) return actionInvalid("registration");
+    const result = await createRegistration({
+      eventId: parsed.data.eventId,
+      studentId: actor.id,
+    });
+    if (!result.ok) return registrationCreateFailure(result.reason);
+    return { success: true, data: { reference: result.reference } };
+  } catch (error) {
+    return toActionResponse(error, "register for event");
+  }
+}
+
+/**
+ * Cancels the signed-in student's active registration.
+ *
+ * @param payload - The event id.
+ * @returns `success: true`, or a not-found/conflict envelope.
+ * @throws {ForbiddenError} When the caller lacks `registration.cancel`.
+ */
+export async function cancelRegistrationAction(
+  payload: CancelRegistrationPayload,
+): Promise<ActionStatusResponse> {
+  try {
+    const actor = await requirePermission("registration.cancel");
+    const parsed = CancelRegistrationSchema.safeParse(payload);
+    if (!parsed.success) return actionInvalid("registration cancellation");
+    const result = await cancelRegistration({
+      eventId: parsed.data.eventId,
+      studentId: actor.id,
+    });
+    if (!result.ok) return registrationCancelFailure(result.reason);
+    return { success: true };
+  } catch (error) {
+    return toActionResponse(error, "cancel registration");
   }
 }

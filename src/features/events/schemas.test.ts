@@ -1,105 +1,198 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ApproveEventSchema,
+  CancelEventSchema,
+  CancelRegistrationSchema,
   CreateEventSchema,
   EventPageQuerySchema,
-  EventTokenSchema,
-  isFacebookEventUrl,
+  RegisterForEventSchema,
+  RequestEventRevisionSchema,
+  SubmitEventSchema,
+  UnpublishEventSchema,
+  UpdateEventSchema,
 } from "./schemas";
 
-const startAt = new Date("2026-11-01T01:00:00.000Z");
+const eventId = "c111111111111111111111111";
+const startAt = "2026-11-12T08:00:00.000Z";
+const endAt = "2026-11-12T16:00:00.000Z";
 
 const validEvent = {
-  title: "General Assembly",
-  venue: "AVR 1",
+  title: "Annual Science Fair 2026",
+  description: "A showcase of student research.",
+  venue: "Main Gymnasium",
   startAt,
+  endAt,
+  mechanics: "Doors open at 7:30 AM.",
+  programFlow: "Opening remarks, exhibits, closing.",
+  requirements: "Bring your student ID.",
+  capacity: 400,
+  registrationClosesAt: "2026-11-10T17:00:00.000Z",
 };
 
-describe("isFacebookEventUrl", () => {
-  it.each([
-    "https://www.facebook.com/events/123456789/",
-    "https://facebook.com/events/123456789",
-    "https://m.facebook.com/events/123456789",
-    "https://web.facebook.com/events/123456789",
-    "https://fb.me/e/abc123",
-  ])("accepts %s", (url) => {
-    expect(isFacebookEventUrl(url)).toBe(true);
+describe("ApproveEventSchema", () => {
+  it("accepts an event id with no comment", () => {
+    expect(ApproveEventSchema.safeParse({ eventId }).success).toBe(true);
   });
 
-  it.each([
-    "https://example.com/events/123456789",
-    "https://facebook.com",
-    "https://facebook.com/",
-    "javascript:alert(1)",
-    "not a url",
-  ])("rejects %s", (url) => {
-    expect(isFacebookEventUrl(url)).toBe(false);
+  it("trims an optional comment", () => {
+    const parsed = ApproveEventSchema.parse({ eventId, comment: "  Looks good  " });
+
+    expect(parsed.comment).toBe("Looks good");
+  });
+
+  it("rejects an invalid event id", () => {
+    expect(ApproveEventSchema.safeParse({ eventId: "not-an-id" }).success).toBe(false);
   });
 });
 
-describe("EventTokenSchema", () => {
-  it("accepts a 32-character hex token", () => {
-    expect(EventTokenSchema.safeParse("0123456789abcdef0123456789abcdef").success).toBe(true);
+describe("RequestEventRevisionSchema", () => {
+  it("requires a non-whitespace comment", () => {
+    const result = RequestEventRevisionSchema.safeParse({ eventId, comment: "   " });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe("Comment is required");
   });
 
-  it.each([
-    "0123456789ABCDEF0123456789ABCDEF",
-    "0123456789abcdef0123456789abcde",
-    "0123456789abcdef0123456789abcdef0",
-    "../../etc/passwd",
-  ])("rejects %s", (token) => {
-    expect(EventTokenSchema.safeParse(token).success).toBe(false);
+  it("accepts and trims a comment", () => {
+    const parsed = RequestEventRevisionSchema.parse({
+      eventId,
+      comment: "  Add the program flow.  ",
+    });
+
+    expect(parsed.comment).toBe("Add the program flow.");
+  });
+
+  it("rejects a comment over 1000 characters", () => {
+    const result = RequestEventRevisionSchema.safeParse({
+      eventId,
+      comment: "a".repeat(1001),
+    });
+
+    expect(result.success).toBe(false);
   });
 });
 
 describe("CreateEventSchema", () => {
-  it("accepts the minimum required fields", () => {
-    expect(CreateEventSchema.safeParse(validEvent).success).toBe(true);
+  it("accepts a complete event and trims text", () => {
+    const parsed = CreateEventSchema.parse({
+      ...validEvent,
+      title: "  Annual Science Fair 2026  ",
+      venue: "  Main Gymnasium  ",
+    });
+
+    expect(parsed.title).toBe("Annual Science Fair 2026");
+    expect(parsed.venue).toBe("Main Gymnasium");
   });
 
-  it("defaults the club to organisation-wide", () => {
-    const parsed = CreateEventSchema.safeParse(validEvent);
-    expect(parsed.success && parsed.data.clubId).toBe(null);
+  it("accepts a draft without mechanics, program flow, requirements, capacity, or deadline", () => {
+    const result = CreateEventSchema.safeParse({
+      title: "Draft event",
+      venue: "Room 101",
+      startAt,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.mechanics).toBeNull();
+      expect(result.data.programFlow).toBeNull();
+      expect(result.data.requirements).toBeNull();
+      expect(result.data.capacity).toBeNull();
+      expect(result.data.registrationClosesAt).toBeNull();
+      expect(result.data.endAt).toBeNull();
+    }
   });
 
-  it("rejects a whitespace-only title", () => {
-    expect(CreateEventSchema.safeParse({ ...validEvent, title: "   " }).success).toBe(false);
+  it.each([
+    ["title", { ...validEvent, title: "   " }],
+    ["venue", { ...validEvent, venue: "   " }],
+    ["startAt", { ...validEvent, startAt: "not-a-date" }],
+  ])("rejects a missing or invalid %s", (_field, payload) => {
+    expect(CreateEventSchema.safeParse(payload).success).toBe(false);
   });
 
-  it("rejects a blank location", () => {
-    expect(CreateEventSchema.safeParse({ ...validEvent, venue: "" }).success).toBe(false);
+  it("rejects an end time that is not after the start time", () => {
+    const result = CreateEventSchema.safeParse({
+      ...validEvent,
+      endAt: startAt,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe("End time must be after the start time");
   });
 
-  it("rejects a non-Facebook link", () => {
-    expect(
-      CreateEventSchema.safeParse({
-        ...validEvent,
-        facebookUrl: "https://example.com/events/1",
-      }).success,
-    ).toBe(false);
-  });
+  it("rejects a registration deadline after the event starts", () => {
+    const result = CreateEventSchema.safeParse({
+      ...validEvent,
+      registrationClosesAt: "2026-11-12T08:01:00.000Z",
+    });
 
-  it("accepts an omitted Facebook link", () => {
-    expect(CreateEventSchema.safeParse({ ...validEvent, facebookUrl: undefined }).success).toBe(
-      true,
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe(
+      "Registration must close on or before the event starts",
     );
   });
 
-  it("rejects a missing start time", () => {
-    expect(
-      CreateEventSchema.safeParse({ title: "Talk", venue: "AVR 1", startAt: undefined }).success,
-    ).toBe(false);
+  it("rejects a non-positive capacity", () => {
+    expect(CreateEventSchema.safeParse({ ...validEvent, capacity: 0 }).success).toBe(false);
+  });
+});
+
+describe("UpdateEventSchema", () => {
+  it("requires the event id", () => {
+    expect(UpdateEventSchema.safeParse(validEvent).success).toBe(false);
+  });
+
+  it("accepts a valid event id and event fields", () => {
+    expect(UpdateEventSchema.safeParse({ eventId, ...validEvent }).success).toBe(true);
+  });
+});
+
+describe("SubmitEventSchema", () => {
+  it("accepts an event id", () => {
+    expect(SubmitEventSchema.safeParse({ eventId }).success).toBe(true);
+  });
+
+  it("rejects an invalid event id", () => {
+    expect(SubmitEventSchema.safeParse({ eventId: "not-an-id" }).success).toBe(false);
+  });
+});
+
+describe("CancelEventSchema", () => {
+  it("accepts an event id", () => {
+    expect(CancelEventSchema.safeParse({ eventId }).success).toBe(true);
+  });
+
+  it("rejects an invalid event id", () => {
+    expect(CancelEventSchema.safeParse({ eventId: "not-an-id" }).success).toBe(false);
+  });
+});
+
+describe("UnpublishEventSchema", () => {
+  it("requires a comment", () => {
+    expect(UnpublishEventSchema.safeParse({ eventId, comment: "   " }).success).toBe(false);
+  });
+
+  it("accepts a comment", () => {
+    expect(UnpublishEventSchema.safeParse({ eventId, comment: "Fix the mechanics." }).success).toBe(
+      true,
+    );
   });
 });
 
 describe("EventPageQuerySchema", () => {
-  it("accepts status filters and an ascending sort", () => {
-    const parsed = EventPageQuerySchema.safeParse({
-      filters: { status: ["APPROVED", "PENDING"] },
-      sort: { column: "startAt", direction: "asc" },
+  it("accepts an empty query", () => {
+    expect(EventPageQuerySchema.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts a status filter and search", () => {
+    const result = EventPageQuerySchema.safeParse({
+      search: "  science  ",
+      filters: { status: ["PUBLISHED"] },
     });
 
-    expect(parsed.success).toBe(true);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.search).toBe("science");
   });
 
   it("rejects an unknown status filter", () => {
@@ -107,8 +200,24 @@ describe("EventPageQuerySchema", () => {
       false,
     );
   });
+});
 
-  it("rejects a page size above the cursor maximum", () => {
-    expect(EventPageQuerySchema.safeParse({ pageSize: 51 }).success).toBe(false);
+describe("RegisterForEventSchema", () => {
+  it("accepts an event id", () => {
+    expect(RegisterForEventSchema.safeParse({ eventId }).success).toBe(true);
+  });
+
+  it("rejects an invalid event id", () => {
+    expect(RegisterForEventSchema.safeParse({ eventId: "not-an-id" }).success).toBe(false);
+  });
+});
+
+describe("CancelRegistrationSchema", () => {
+  it("accepts an event id", () => {
+    expect(CancelRegistrationSchema.safeParse({ eventId }).success).toBe(true);
+  });
+
+  it("rejects an invalid event id", () => {
+    expect(CancelRegistrationSchema.safeParse({ eventId: "not-an-id" }).success).toBe(false);
   });
 });

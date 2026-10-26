@@ -20,7 +20,7 @@ export function SignInForm({ callbackUrl = "/notifications", loginHint }: SignIn
   return (
     <div className={styles.form}>
       <Button
-        variant="secondary"
+        variant="primary"
         className={styles.button}
         onPress={() => void signIn("google", { callbackUrl }, authorizationParams)}
       >

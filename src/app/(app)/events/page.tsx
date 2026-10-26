@@ -1,22 +1,11 @@
-import { EventsManagement } from "@/features/events/components/EventsManagement/EventsManagement";
-import { getEventPage } from "@/features/events/queries";
-import { buildEventScope } from "@/features/events/scope";
-import { requirePagePermission } from "@/lib/security/auth-guards";
-import { can, eventVisibility } from "@/lib/security/rbac";
+import { EventsBrowser } from "@/features/events/components/EventsBrowser/EventsBrowser";
 
-export default async function EventsPage() {
-  const session = await requirePagePermission("event.read");
-  const page = await getEventPage({
-    scope: buildEventScope(session),
-    query: { pageSize: 10 },
-  });
+interface EventsPageProps {
+  searchParams: Promise<{ status?: string }>;
+}
 
-  return (
-    <EventsManagement
-      initialRows={page.rows}
-      initialCursor={page.nextCursor}
-      canCreate={can(session.role, "event.create")}
-      isAdmin={eventVisibility(session.role) === "global"}
-    />
-  );
+export default async function EventsPage({ searchParams }: EventsPageProps) {
+  const { status } = await searchParams;
+
+  return <EventsBrowser initialStatus={status === "open" ? "open" : "all"} />;
 }

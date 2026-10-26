@@ -1,150 +1,221 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FaArrowLeft, FaFacebook, FaPenToSquare, FaTrash } from "react-icons/fa6";
+import type { IconType } from "react-icons";
+import {
+  FaArrowLeft,
+  FaCalendarDay,
+  FaCalendarPlus,
+  FaCalendarXmark,
+  FaClock,
+  FaLocationDot,
+  FaUserGroup,
+} from "react-icons/fa6";
 
-import { Button } from "@/components/ui/Button/Button";
-import { ButtonLink } from "@/components/ui/ButtonLink/ButtonLink";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog/ConfirmDialog";
-import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/StatusBadge/StatusBadge";
-import { ClubLabel } from "@/features/clubs/components/ClubLabel/ClubLabel";
-import { deleteEventAction } from "@/features/events/actions";
-import { EventFormModal } from "@/features/events/components/EventFormModal/EventFormModal";
-import { EventQrPanel } from "@/features/events/components/EventQrPanel/EventQrPanel";
-import type { EventDetail } from "@/features/events/queries";
-import { EventStatus } from "@/generated/prisma/browser";
-import { toastActionError, toastSuccess } from "@/lib/hooks/toast-utils";
-import { formatDateTime } from "@/lib/primitives/date";
+import { Link } from "@/components/ui/Link/Link";
+import { toastError, toastSuccess } from "@/lib/hooks/toast-utils";
 
+import { cancelRegistration, registerForEvent, useEvent } from "../../event-data";
+import { formatEventDay, formatEventTimeRange, formatLongDateTime } from "../../format";
+import type { EventDetailData, EventMutationFailureReason } from "../../types";
+import { EventStatusPill } from "../EventStatusPill/EventStatusPill";
+import { RegistrationModal } from "../RegistrationModal/RegistrationModal";
+import { SeatAvailabilityCard } from "../SeatAvailabilityCard/SeatAvailabilityCard";
 import styles from "./EventDetailView.module.css";
 
 interface EventDetailViewProps {
-  event: EventDetail;
-  qr: { link: string; dataUrl: string } | null;
-  canManage: boolean;
-  canDelete: boolean;
-  isAdmin: boolean;
+  eventId: string;
+  displayEvent?: EventDetailData;
 }
 
-const statusLabels: Record<EventStatus, string> = {
-  [EventStatus.PENDING]: "Pending",
-  [EventStatus.APPROVED]: "Approved",
-  [EventStatus.REJECTED]: "Rejected",
-  [EventStatus.CANCELLED]: "Cancelled",
+interface InfoItemProps {
+  icon: IconType;
+  label: string;
+  value: string;
+}
+
+const failureMessages: Record<EventMutationFailureReason, string> = {
+  full: "This event is full. No seats are currently available.",
+  closed: "Registration is closed for this event.",
+  started: "The event has already started, so registration changes are no longer available.",
+  not_registered: "You are not registered for this event.",
+  not_found: "This event is no longer available.",
 };
 
-const statusVariants: Record<EventStatus, StatusBadgeVariant> = {
-  [EventStatus.PENDING]: "pending",
-  [EventStatus.APPROVED]: "done",
-  [EventStatus.REJECTED]: "danger",
-  [EventStatus.CANCELLED]: "cancelled",
-};
+function InfoItem({ icon: Icon, label, value }: InfoItemProps) {
+  return (
+    <div className={styles.infoItem}>
+      <span className={styles.infoIcon} aria-hidden="true">
+        <Icon />
+      </span>
+      <div className={styles.infoText}>
+        <dt className={styles.infoLabel}>{label}</dt>
+        <dd className={styles.infoValue}>{value}</dd>
+      </div>
+    </div>
+  );
+}
 
-export function EventDetailView({
-  event,
-  qr,
-  canManage,
-  canDelete,
-  isAdmin,
-}: EventDetailViewProps) {
-  const router = useRouter();
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+export function EventDetailView({ eventId, displayEvent }: EventDetailViewProps) {
+  const mockEvent = useEvent(eventId);
+  const event = displayEvent ?? mockEvent;
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const [isSuccessOpen, setIsSuccessOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isCancelOpen, setIsCancelOpen] = useState(false);
+
+  if (!event) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.notFound}>
+          <h1 className={styles.notFoundTitle}>Event not found</h1>
+          <p className={styles.notFoundText}>
+            The event may have been removed or the link is incorrect.
+          </p>
+          <Link href="/events">Back to events</Link>
+        </div>
+      </div>
+    );
+  }
+
+  function handleRegister() {
+    const result = registerForEvent(eventId);
+    setIsRegisterOpen(false);
+
+    if (!result.success) {
+      toastError("Could not register", failureMessages[result.reason]);
+      return;
+    }
+
+    setIsSuccessOpen(true);
+  }
+
+  function handleCancel() {
+    const result = cancelRegistration(eventId);
+    if (!result.success) {
+      toastError("Could not cancel registration", failureMessages[result.reason]);
+      return;
+    }
+
+    setIsCancelOpen(false);
+    setIsDetailsOpen(false);
+    toastSuccess(
+      "Registration cancelled",
+      "Your seat has been released. You can register again before the event starts.",
+    );
+  }
+
+  const registration =
+    mockEvent?.registration?.state === "registered" ? mockEvent.registration : null;
 
   return (
     <div className={styles.page}>
-      <ButtonLink href="/events" variant="ghost" className={styles.back}>
-        <FaArrowLeft aria-hidden="true" /> Back to events
-      </ButtonLink>
+      <Link href="/events" variant="unstyled" className={styles.backLink}>
+        <FaArrowLeft aria-hidden="true" />
+        Back to events
+      </Link>
 
-      <header className={styles.header}>
-        <div className={styles.heading}>
-          <h1 className={styles.title}>{event.title}</h1>
-          <div className={styles.badges}>
-            <StatusBadge variant={statusVariants[event.status]}>
-              {statusLabels[event.status]}
-            </StatusBadge>
-            {event.clubName && <ClubLabel name={event.clubName} shortName={event.clubShortName} />}
-          </div>
-        </div>
-        <div className={styles.actions}>
-          {canManage && (
-            <Button variant="secondary" onPress={() => setEditOpen(true)}>
-              <FaPenToSquare aria-hidden="true" /> Edit
-            </Button>
-          )}
-          {canDelete && (
-            <Button variant="secondary" onPress={() => setDeleteOpen(true)}>
-              <FaTrash aria-hidden="true" /> Delete
-            </Button>
-          )}
-          {event.facebookUrl && (
-            <ButtonLink href={event.facebookUrl} target="_blank" rel="noreferrer">
-              <FaFacebook aria-hidden="true" /> Open Facebook Event
-            </ButtonLink>
-          )}
-        </div>
-      </header>
-
-      <div className={styles.body}>
-        <section className={styles.details}>
-          <dl className={styles.meta}>
-            <div>
-              <dt>Starts</dt>
-              <dd>{formatDateTime(event.startAt)}</dd>
-            </div>
-            {event.endAt && (
-              <div>
-                <dt>Ends</dt>
-                <dd>{formatDateTime(event.endAt)}</dd>
+      <div className={styles.layout}>
+        <article className={styles.mainCard}>
+          <header className={styles.eventHeader}>
+            <h1 className={styles.eventTitle}>{event.title}</h1>
+            {mockEvent && (
+              <div className={styles.tags}>
+                <EventStatusPill status={mockEvent.status} />
               </div>
             )}
-            <div>
-              <dt>Location</dt>
-              <dd>{event.venue}</dd>
-            </div>
-            <div>
-              <dt>Organised by</dt>
-              <dd>{event.createdByName}</dd>
-            </div>
-          </dl>
-          {event.description && <p className={styles.description}>{event.description}</p>}
-        </section>
+          </header>
 
-        {qr && <EventQrPanel eventTitle={event.title} link={qr.link} qrDataUrl={qr.dataUrl} />}
+          <section className={styles.about} aria-labelledby="about-event-heading">
+            <h2 id="about-event-heading" className={styles.sectionTitle}>
+              About this event
+            </h2>
+            <p className={styles.aboutText}>{event.description}</p>
+          </section>
+
+          <dl className={styles.infoGrid}>
+            <InfoItem icon={FaCalendarDay} label="Date" value={formatEventDay(event.startAt)} />
+            <InfoItem
+              icon={FaClock}
+              label="Time"
+              value={formatEventTimeRange(event.startAt, event.endAt)}
+            />
+            <InfoItem icon={FaLocationDot} label="Venue" value={event.venue} />
+            <InfoItem icon={FaUserGroup} label="Organizer" value={event.organizer} />
+            {mockEvent && (
+              <>
+                <InfoItem
+                  icon={FaCalendarPlus}
+                  label="Registration opens"
+                  value={formatLongDateTime(mockEvent.registrationOpensAt)}
+                />
+                <InfoItem
+                  icon={FaCalendarXmark}
+                  label="Registration closes"
+                  value={formatLongDateTime(mockEvent.registrationClosesAt)}
+                />
+              </>
+            )}
+          </dl>
+        </article>
+
+        {mockEvent && (
+          <aside className={styles.sidebar} aria-label="Registration">
+            <SeatAvailabilityCard
+              event={mockEvent}
+              onRegister={() => setIsRegisterOpen(true)}
+              onManageRegistration={() => setIsDetailsOpen(true)}
+            />
+          </aside>
+        )}
       </div>
 
-      {canManage && (
-        <EventFormModal
-          isOpen={editOpen}
-          onOpenChange={setEditOpen}
-          event={event}
-          isAdmin={isAdmin}
-          onSuccess={() => router.refresh()}
-        />
-      )}
+      {mockEvent && (
+        <>
+          <ConfirmDialog
+            isOpen={isRegisterOpen}
+            onOpenChange={setIsRegisterOpen}
+            title="Register for this event?"
+            confirmLabel="Yes, register"
+            cancelLabel="Keep browsing"
+            onConfirm={handleRegister}
+          >
+            Your seat will be reserved and you&apos;ll get a registration reference.
+          </ConfirmDialog>
 
-      <ConfirmDialog
-        isOpen={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title="Delete event"
-        confirmLabel="Delete event"
-        onConfirm={async () => {
-          const result = await deleteEventAction({ eventId: event.id });
-          if (!result.success) {
-            toastActionError(result, "delete event");
-            return;
-          }
-          setDeleteOpen(false);
-          toastSuccess("Event deleted", `${event.title} has been deleted.`);
-          router.push("/events");
-        }}
-      >
-        Are you sure you want to delete <strong>{event.title}</strong>? Its attendance records will
-        be removed, notifications will keep their content without the event link, and its QR code
-        will stop working. This cannot be undone.
-      </ConfirmDialog>
+          {registration && (
+            <>
+              <RegistrationModal
+                mode="success"
+                isOpen={isSuccessOpen}
+                onOpenChange={setIsSuccessOpen}
+                reference={registration.reference}
+              />
+
+              <RegistrationModal
+                mode="manage"
+                isOpen={isDetailsOpen}
+                onOpenChange={setIsDetailsOpen}
+                reference={registration.reference}
+                canCancel={mockEvent?.canCancel ?? false}
+                onCancel={() => setIsCancelOpen(true)}
+              />
+            </>
+          )}
+
+          <ConfirmDialog
+            isOpen={isCancelOpen}
+            onOpenChange={setIsCancelOpen}
+            title="Cancel your registration?"
+            confirmLabel="Cancel registration"
+            cancelLabel="Keep registration"
+            onConfirm={handleCancel}
+          >
+            Your seat will be released. You can register again before the event starts.
+          </ConfirmDialog>
+        </>
+      )}
     </div>
   );
 }

@@ -49,7 +49,7 @@ shared modules should not import a feature's internals.
 **Page reads.** A server component runs a page-level access check, reads the initial data, and passes plain serialisable
 values into client components. Expected access failures redirect to a notice page instead of reaching an error boundary.
 
-**Lists.** The user, club, and notification lists use cursor pagination. The server applies search, filters, and sorting,
+**Lists.** The people and notification lists use cursor pagination. The server applies search, filters, and sorting,
 then returns a page of rows with a cursor for the next page. Client components request more through actions and append
 the results without keeping a second independent data store.
 

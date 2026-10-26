@@ -1,0 +1,7 @@
+# Attendance presence and walk-in authority
+
+> **Amended by ADR-0007** (simplified roles and approval). A walk-in is a flag on the presence table rather than its own table, and attendance is recorded by `OFFICER` or `ADMIN`. The body below states the current model.
+
+Attendance is one presence record per event and student, with status `PRESENT` (having `markedPresentAt`), under a single `@@unique([eventId, studentId])` rule. Absence is simply the lack of a presence record — there is no `ABSENT` row. A walk-in is an `Attendance` row with `isWalkIn = true`, a required reason and the recording actor, created for a student who did not register. It never consumes registration capacity, is counted separately from registered attendance, and is audited separately from presence — presence alone does not imply approval of the exception. It is recorded by an `OFFICER` or `ADMIN` account, not through an event approval step (that governs Event publish only). Walk-ins do not become registrations and do not reduce the capacity cap. Because the unique rule holds for every presence row, a student who already has an attendance row for the event cannot register or re-register, which mirrors the cancellation rule. The MVP assumption remains no corrections, while correction authority, deadline, and audit semantics remain an open question.
+
+Rejected alternatives include a separate walk-in table causing parallel presence records, and allowing walk-ins without a reason or a recording actor. Modelling absence as an `ABSENT` row within the presence table stays rejected.

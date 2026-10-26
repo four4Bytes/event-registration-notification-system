@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 
-import { Role } from "@/generated/prisma/browser";
+import type { OfficerPosition, Role } from "@/generated/prisma/browser";
 import { auth } from "@/lib/infra/auth";
 import { DeactivatedError, ForbiddenError, UnauthorizedError } from "@/lib/security/errors";
-import { can, type Permission } from "@/lib/security/rbac";
+import { canWithPosition, type Permission } from "@/lib/security/rbac";
 
 /** Minimal authenticated-user projection shared by the auth guards. */
 export interface AuthenticatedUser {
@@ -12,7 +12,7 @@ export interface AuthenticatedUser {
   name: string;
   role: Role;
   isActive: boolean;
-  clubId: string | null;
+  officerPosition: OfficerPosition | null;
 }
 
 /**
@@ -33,7 +33,7 @@ export async function requireAuth(): Promise<AuthenticatedUser> {
     name: user.name,
     role: user.role,
     isActive: user.isActive,
-    clubId: user.clubId ?? null,
+    officerPosition: user.officerPosition ?? null,
   };
 }
 
@@ -50,7 +50,10 @@ export async function requireAuth(): Promise<AuthenticatedUser> {
  */
 export async function requirePermission(...permissions: Permission[]): Promise<AuthenticatedUser> {
   const user = await requireAuth();
-  if (!permissions.some((permission) => can(user.role, permission))) throw new ForbiddenError();
+  if (
+    !permissions.some((permission) => canWithPosition(user.role, user.officerPosition, permission))
+  )
+    throw new ForbiddenError();
   return user;
 }
 

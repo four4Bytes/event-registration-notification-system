@@ -3,87 +3,116 @@ import { z } from "zod";
 import { EventStatus } from "@/generated/prisma/browser";
 import { optionalText, requiredText } from "@/lib/validation/form-utils";
 
-const cuidSchema = z.string().regex(/^c[a-z0-9]{24}$/, "Invalid event identifier");
+const eventIdSchema = z.string().regex(/^c[a-z0-9]{24}$/, "Invalid event identifier");
 
-const FACEBOOK_HOSTS = new Set([
-  "facebook.com",
-  "www.facebook.com",
-  "m.facebook.com",
-  "web.facebook.com",
-  "fb.com",
-  "www.fb.com",
-  "fb.me",
-  "www.fb.me",
-]);
+const nullableText = (max: number, label: string) =>
+  optionalText(max, label).transform((value) => value ?? null);
 
-/**
- * Checks whether a value is a well-formed Facebook event URL.
- *
- * Only public `http(s)` links on Facebook-owned hosts with a non-root path are
- * accepted. The system never fetches the page, so private or inaccessible
- * events remain readable only in the application's own saved details.
- *
- * @param value - The candidate URL.
- * @returns True when the URL points at a Facebook event path.
- */
-export function isFacebookEventUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    const protocolAllowed = url.protocol === "https:" || url.protocol === "http:";
-    return (
-      protocolAllowed && FACEBOOK_HOSTS.has(url.hostname.toLowerCase()) && url.pathname.length > 1
-    );
-  } catch {
-    return false;
+const isoDateTime = (label: string) =>
+  z.iso.datetime({ offset: true, error: `Enter a valid ${label.toLowerCase()}` });
+
+const eventWriteFields = {
+  title: requiredText(200, "Title"),
+  description: nullableText(5000, "Description"),
+  venue: requiredText(200, "Venue"),
+  startAt: isoDateTime("Start date and time"),
+  endAt: isoDateTime("End date and time").nullable().default(null),
+  mechanics: nullableText(5000, "Mechanics"),
+  programFlow: nullableText(5000, "Program flow"),
+  requirements: nullableText(5000, "Requirements"),
+  capacity: z
+    .number({ error: "Enter a valid capacity" })
+    .int("Capacity must be a whole number")
+    .positive("Capacity must be greater than 0")
+    .max(100000, "Capacity must not exceed 100000")
+    .nullable()
+    .default(null),
+  registrationClosesAt: isoDateTime("Registration deadline").nullable().default(null),
+};
+
+const eventWriteSchema = z.object(eventWriteFields);
+type EventWriteData = Pick<
+  z.output<typeof eventWriteSchema>,
+  "startAt" | "endAt" | "registrationClosesAt"
+>;
+
+function addEventWriteRules(values: EventWriteData, context: z.RefinementCtx): void {
+  const { startAt, endAt, registrationClosesAt } = values;
+  const start = new Date(startAt).getTime();
+
+  if (endAt && new Date(endAt).getTime() <= start) {
+    context.addIssue({
+      code: "custom",
+      path: ["endAt"],
+      message: "End time must be after the start time",
+    });
+  }
+
+  if (registrationClosesAt && new Date(registrationClosesAt).getTime() > start) {
+    context.addIssue({
+      code: "custom",
+      path: ["registrationClosesAt"],
+      message: "Registration must close on or before the event starts",
+    });
   }
 }
 
-export const EventIdSchema = z.object({ eventId: cuidSchema });
+export const CreateEventSchema = eventWriteSchema.superRefine(addEventWriteRules);
 
-export const EventTokenSchema = z
-  .string()
-  .trim()
-  .regex(/^[a-f0-9]{32}$/, "Invalid event QR code");
+export const UpdateEventSchema = eventWriteSchema
+  .extend({ eventId: eventIdSchema })
+  .superRefine(addEventWriteRules);
 
-const FacebookUrlSchema = z
-  .string()
-  .trim()
-  .max(500, "Facebook link must be at most 500 characters")
-  .refine(isFacebookEventUrl, "Enter a valid Facebook event link")
-  .optional();
+export const SubmitEventSchema = z.object({ eventId: eventIdSchema });
 
-const EventWriteSchema = z.object({
-  title: requiredText(160, "Title"),
-  description: optionalText(5000, "Description"),
-  venue: requiredText(200, "Location"),
-  startAt: z.date({ error: "Select a date and time" }),
-  facebookUrl: FacebookUrlSchema,
-  clubId: cuidSchema.nullable().default(null),
+export const CancelEventSchema = z.object({ eventId: eventIdSchema });
+
+export const UnpublishEventSchema = z.object({
+  eventId: eventIdSchema,
+  comment: requiredText(1000, "Comment"),
 });
 
-export const CreateEventSchema = EventWriteSchema;
-
-export const UpdateEventSchema = EventWriteSchema.extend({ eventId: cuidSchema });
-
-export const EventStatusFilterSchema = z.enum(EventStatus);
+export const EventStatusFilterSchema = z.enum([
+  EventStatus.DRAFT,
+  EventStatus.SUBMITTED,
+  EventStatus.REVISION_REQUESTED,
+  EventStatus.APPROVED,
+  EventStatus.PUBLISHED,
+  EventStatus.CANCELLED,
+]);
 
 export const EventPageQuerySchema = z.object({
   search: optionalText(200, "Search", true),
   cursor: z.string().max(500).optional(),
   pageSize: z.number().int().min(1).max(50).optional(),
-  sort: z
-    .object({
-      column: z.string(),
-      direction: z.enum(["asc", "desc"]),
-    })
-    .optional(),
   filters: z
     .object({
-      status: z.array(EventStatusFilterSchema).max(4).optional(),
+      status: z.array(EventStatusFilterSchema).optional(),
     })
     .optional(),
 });
 
+export const RegisterForEventSchema = z.object({ eventId: eventIdSchema });
+
+export const CancelRegistrationSchema = z.object({ eventId: eventIdSchema });
+
+export const ApproveEventSchema = z.object({
+  eventId: eventIdSchema,
+  comment: optionalText(1000, "Comment"),
+});
+
+export const RequestEventRevisionSchema = z.object({
+  eventId: eventIdSchema,
+  comment: requiredText(1000, "Comment"),
+});
+
 export type CreateEventPayload = z.input<typeof CreateEventSchema>;
 export type UpdateEventPayload = z.input<typeof UpdateEventSchema>;
-export type EventIdPayload = z.input<typeof EventIdSchema>;
+export type SubmitEventPayload = z.input<typeof SubmitEventSchema>;
+export type CancelEventPayload = z.input<typeof CancelEventSchema>;
+export type UnpublishEventPayload = z.input<typeof UnpublishEventSchema>;
+export type EventPageQueryPayload = z.input<typeof EventPageQuerySchema>;
+export type RegisterForEventPayload = z.input<typeof RegisterForEventSchema>;
+export type CancelRegistrationPayload = z.input<typeof CancelRegistrationSchema>;
+export type ApproveEventPayload = z.input<typeof ApproveEventSchema>;
+export type RequestEventRevisionPayload = z.input<typeof RequestEventRevisionSchema>;
