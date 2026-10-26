@@ -12,6 +12,7 @@ interface SeatAvailabilityCardProps {
   event: EventView;
   onRegister: () => void;
   onManageRegistration: () => void;
+  canRegister?: boolean;
   className?: string;
 }
 
@@ -26,6 +27,7 @@ export function SeatAvailabilityCard({
   event,
   onRegister,
   onManageRegistration,
+  canRegister = true,
   className,
 }: SeatAvailabilityCardProps) {
   const isRegistered = event.status === "registered";
@@ -79,19 +81,22 @@ export function SeatAvailabilityCard({
         aria-describedby={disabledMessage ? reasonId : undefined}
         aria-label={isRegistered ? "You're registered. View registration details" : undefined}
         onPress={isRegistered ? onManageRegistration : onRegister}
+        hidden={!canRegister}
       >
         {isRegistered ? "You're registered" : "Register"}
       </Button>
 
-      {disabledMessage && (
+      {canRegister && disabledMessage && (
         <p id={reasonId} className={styles.reason}>
           {disabledMessage}
         </p>
       )}
 
-      <p className={styles.note}>
-        You can cancel your registration any time before the event starts.
-      </p>
+      {canRegister && (
+        <p className={styles.note}>
+          You can cancel your registration any time before the event starts.
+        </p>
+      )}
     </section>
   );
 }

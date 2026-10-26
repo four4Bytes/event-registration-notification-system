@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  AttendanceMethod,
   EventApprovalAction,
   EventStatus,
   RegistrationStatus,
@@ -10,6 +11,10 @@ import {
 import {
   countSubmittedEvents,
   getApprovalQueue,
+  getAttendanceEventOptions,
+  getAttendancePage,
+  getAttendanceVerification,
+  getEventAttendanceStats,
   getEventById,
   getEventDetail,
   getEventForEdit,
@@ -27,6 +32,10 @@ const prismaMocks = vi.hoisted(() => ({
   count: vi.fn(),
   registrationFindMany: vi.fn(),
   registrationFindUnique: vi.fn(),
+  registrationCount: vi.fn(),
+  attendanceFindMany: vi.fn(),
+  attendanceFindUnique: vi.fn(),
+  attendanceCount: vi.fn(),
 }));
 
 vi.mock("@/lib/infra/prisma", () => ({
@@ -40,6 +49,12 @@ vi.mock("@/lib/infra/prisma", () => ({
     registration: {
       findMany: prismaMocks.registrationFindMany,
       findUnique: prismaMocks.registrationFindUnique,
+      count: prismaMocks.registrationCount,
+    },
+    attendance: {
+      findMany: prismaMocks.attendanceFindMany,
+      findUnique: prismaMocks.attendanceFindUnique,
+      count: prismaMocks.attendanceCount,
     },
   },
 }));
@@ -74,6 +89,10 @@ beforeEach(() => {
   prismaMocks.count.mockReset();
   prismaMocks.registrationFindMany.mockReset();
   prismaMocks.registrationFindUnique.mockReset();
+  prismaMocks.registrationCount.mockReset();
+  prismaMocks.attendanceFindMany.mockReset();
+  prismaMocks.attendanceFindUnique.mockReset();
+  prismaMocks.attendanceCount.mockReset();
 });
 
 describe("getEventById", () => {
@@ -531,5 +550,178 @@ describe("getRegistrationTicket", () => {
     });
 
     await expect(getRegistrationTicket("event-1", "student-1", now)).resolves.toBeNull();
+  });
+});
+
+describe("getAttendanceEventOptions", () => {
+  it("returns published events with their registered counts", async () => {
+    prismaMocks.findMany.mockResolvedValue([
+      {
+        id: "event-1",
+        title: "Annual Science Fair 2026",
+        startAt,
+        endAt,
+        venue: "Main Gymnasium",
+        _count: { registrations: 3 },
+      },
+    ]);
+
+    await expect(getAttendanceEventOptions()).resolves.toEqual([
+      {
+        id: "event-1",
+        title: "Annual Science Fair 2026",
+        startAt,
+        endAt,
+        venue: "Main Gymnasium",
+        registeredCount: 3,
+      },
+    ]);
+    expect(prismaMocks.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          status: EventStatus.PUBLISHED,
+          registrations: { some: { status: RegistrationStatus.REGISTERED } },
+        },
+      }),
+    );
+  });
+});
+
+describe("getEventAttendanceStats", () => {
+  it("counts registered, checked-in, and today's check-ins", async () => {
+    prismaMocks.registrationCount.mockResolvedValue(10);
+    prismaMocks.attendanceCount.mockResolvedValueOnce(4).mockResolvedValueOnce(2);
+
+    await expect(getEventAttendanceStats("event-1")).resolves.toEqual({
+      registered: 10,
+      checkedIn: 4,
+      notCheckedIn: 6,
+      todayCheckIns: 2,
+      completionRate: 40,
+    });
+  });
+
+  it("reports zero completion when nothing is registered", async () => {
+    prismaMocks.registrationCount.mockResolvedValue(0);
+    prismaMocks.attendanceCount.mockResolvedValue(0);
+
+    await expect(getEventAttendanceStats("event-1")).resolves.toEqual({
+      registered: 0,
+      checkedIn: 0,
+      notCheckedIn: 0,
+      todayCheckIns: 0,
+      completionRate: 0,
+    });
+  });
+});
+
+describe("getAttendancePage", () => {
+  it("maps rows with their registration reference and returns a next cursor", async () => {
+    const checkedInAt = new Date("2026-11-12T08:30:00+08:00");
+    prismaMocks.attendanceFindMany.mockResolvedValue([
+      {
+        id: "attendance-2",
+        eventId: "event-1",
+        studentId: "student-2",
+        checkedInAt,
+        method: AttendanceMethod.QR,
+        event: { title: "Annual Science Fair 2026" },
+        student: { name: "Jose Cruz", studentNumber: null },
+        recordedBy: { name: "Liza Mercado" },
+      },
+      {
+        id: "attendance-1",
+        eventId: "event-1",
+        studentId: "student-1",
+        checkedInAt,
+        method: AttendanceMethod.MANUAL,
+        event: { title: "Annual Science Fair 2026" },
+        student: { name: "Maria Santos", studentNumber: "20260001" },
+        recordedBy: { name: "Miguel Tan" },
+      },
+    ]);
+    prismaMocks.registrationFindMany.mockResolvedValue([
+      { eventId: "event-1", studentId: "student-2", reference: "KASAMA-DEF456" },
+      { eventId: "event-1", studentId: "student-1", reference: "KASAMA-ABC123" },
+    ]);
+
+    const page = await getAttendancePage({
+      eventId: "event-1",
+      method: AttendanceMethod.QR,
+      pageSize: 1,
+    });
+
+    expect(page.rows).toEqual([
+      {
+        id: "attendance-2",
+        eventId: "event-1",
+        eventTitle: "Annual Science Fair 2026",
+        studentName: "Jose Cruz",
+        studentNumber: null,
+        reference: "KASAMA-DEF456",
+        checkedInAt,
+        method: AttendanceMethod.QR,
+        recordedByName: "Liza Mercado",
+      },
+    ]);
+    expect(page.nextCursor).not.toBeNull();
+    expect(prismaMocks.attendanceFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { AND: [{ eventId: "event-1" }, { method: AttendanceMethod.QR }] },
+      }),
+    );
+  });
+});
+
+describe("getAttendanceVerification", () => {
+  const registrationRow = {
+    eventId: "event-1",
+    studentId: "student-1",
+    status: RegistrationStatus.REGISTERED,
+    student: { name: "Maria Santos", studentNumber: "20260001" },
+    event: { title: "Annual Science Fair 2026", status: EventStatus.PUBLISHED },
+  };
+
+  it("returns the verified student and any existing check-in time", async () => {
+    const checkedInAt = new Date("2026-11-12T08:30:00+08:00");
+    prismaMocks.registrationFindUnique.mockResolvedValue(registrationRow);
+    prismaMocks.attendanceFindUnique.mockResolvedValue({ checkedInAt });
+
+    await expect(getAttendanceVerification("event-1", "KASAMA-ABC123")).resolves.toEqual({
+      ok: true,
+      verification: {
+        eventId: "event-1",
+        eventTitle: "Annual Science Fair 2026",
+        reference: "KASAMA-ABC123",
+        studentName: "Maria Santos",
+        studentNumber: "20260001",
+        alreadyCheckedInAt: checkedInAt,
+      },
+    });
+  });
+
+  it.each([
+    ["an unknown reference", null, "not_found"],
+    ["a reference from another event", { ...registrationRow, eventId: "event-9" }, "wrong_event"],
+    [
+      "a cancelled registration",
+      { ...registrationRow, status: RegistrationStatus.CANCELLED },
+      "not_registered",
+    ],
+    [
+      "an unpublished event",
+      {
+        ...registrationRow,
+        event: { title: "Annual Science Fair 2026", status: EventStatus.CANCELLED },
+      },
+      "not_published",
+    ],
+  ])("rejects %s", async (_label, row, reason) => {
+    prismaMocks.registrationFindUnique.mockResolvedValue(row);
+
+    await expect(getAttendanceVerification("event-1", "KASAMA-ABC123")).resolves.toEqual({
+      ok: false,
+      reason,
+    });
   });
 });

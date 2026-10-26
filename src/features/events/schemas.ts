@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { EventStatus } from "@/generated/prisma/browser";
+import { AttendanceMethod, EventStatus } from "@/generated/prisma/browser";
 import { optionalText, requiredText } from "@/lib/validation/form-utils";
 
 const eventIdSchema = z.string().regex(/^c[a-z0-9]{24}$/, "Invalid event identifier");
@@ -101,6 +101,32 @@ export const ApproveEventSchema = z.object({
   comment: optionalText(1000, "Comment"),
 });
 
+const attendanceMethodSchema = z.enum([AttendanceMethod.QR, AttendanceMethod.MANUAL]);
+
+const attendanceReferenceSchema = requiredText(64, "Reference").transform((value) =>
+  value.toUpperCase(),
+);
+
+export const VerifyAttendanceSchema = z.object({
+  eventId: eventIdSchema,
+  reference: attendanceReferenceSchema,
+});
+
+export const RecordAttendanceSchema = z.object({
+  eventId: eventIdSchema,
+  reference: attendanceReferenceSchema,
+  method: attendanceMethodSchema,
+});
+
+export const AttendancePageQuerySchema = z.object({
+  eventId: eventIdSchema.optional(),
+  search: optionalText(200, "Search", true),
+  method: attendanceMethodSchema.optional(),
+  date: z.iso.date().optional(),
+  cursor: z.string().max(500).optional(),
+  pageSize: z.number().int().min(1).max(50).optional(),
+});
+
 export const RequestEventRevisionSchema = z.object({
   eventId: eventIdSchema,
   comment: requiredText(1000, "Comment"),
@@ -114,5 +140,8 @@ export type UnpublishEventPayload = z.input<typeof UnpublishEventSchema>;
 export type EventPageQueryPayload = z.input<typeof EventPageQuerySchema>;
 export type RegisterForEventPayload = z.input<typeof RegisterForEventSchema>;
 export type CancelRegistrationPayload = z.input<typeof CancelRegistrationSchema>;
+export type VerifyAttendancePayload = z.input<typeof VerifyAttendanceSchema>;
+export type RecordAttendancePayload = z.input<typeof RecordAttendanceSchema>;
+export type AttendancePageQueryPayload = z.input<typeof AttendancePageQuerySchema>;
 export type ApproveEventPayload = z.input<typeof ApproveEventSchema>;
 export type RequestEventRevisionPayload = z.input<typeof RequestEventRevisionSchema>;

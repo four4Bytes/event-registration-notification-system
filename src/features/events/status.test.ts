@@ -32,7 +32,7 @@ describe("getRemainingSeats", () => {
     const unlimitedEvent = { ...baseEvent, capacity: null, seatsTaken: 401 };
 
     expect(getRemainingSeats(unlimitedEvent)).toBeNull();
-    expect(resolveEventStatus(unlimitedEvent)).toBe("open");
+    expect(resolveEventStatus(unlimitedEvent, "2026-10-22T00:00:00+08:00")).toBe("open");
   });
 });
 

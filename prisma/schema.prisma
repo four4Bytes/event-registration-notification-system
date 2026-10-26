@@ -44,6 +44,11 @@ enum RegistrationStatus {
   CANCELLED
 }
 
+enum AttendanceMethod {
+  QR
+  MANUAL
+}
+
 enum TaskType {
   ATTENDANCE
   GENERAL
@@ -79,6 +84,7 @@ model User {
   pendingAssignmentsMade PendingRoleAssignment[] @relation("AssignedBy")
   tasksAssigned          Task[]                  @relation("TaskAssignee")
   tasksCreated           Task[]                  @relation("TaskAssigner")
+  attendanceRecorded     Attendance[]            @relation("AttendanceRecorder")
   accounts               Account[]
   sessions               Session[]
 }
@@ -169,15 +175,19 @@ model Registration {
 }
 
 model Attendance {
-  id          String   @id @default(cuid())
-  eventId     String
-  event       Event    @relation(fields: [eventId], references: [id])
-  studentId   String
-  student     User     @relation(fields: [studentId], references: [id])
-  checkedInAt DateTime @default(now())
-  photoUrl    String
+  id           String           @id @default(cuid())
+  eventId      String
+  event        Event            @relation(fields: [eventId], references: [id])
+  studentId    String
+  student      User             @relation(fields: [studentId], references: [id])
+  checkedInAt  DateTime         @default(now())
+  photoUrl     String
+  method       AttendanceMethod @default(QR)
+  recordedById String?
+  recordedBy   User?            @relation("AttendanceRecorder", fields: [recordedById], references: [id])
 
   @@unique([eventId, studentId])
+  @@index([eventId, checkedInAt])
 }
 
 model Task {

@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { EventApprovalAction, EventStatus, RegistrationStatus } from "@/generated/prisma/browser";
+import {
+  AttendanceMethod,
+  EventApprovalAction,
+  EventStatus,
+  RegistrationStatus,
+} from "@/generated/prisma/browser";
 import { Prisma } from "@/generated/prisma/client";
 
 import {
@@ -9,6 +14,7 @@ import {
   cancelRegistration,
   createEvent,
   createRegistration,
+  recordAttendance,
   requestEventRevision,
   submitEvent,
   updateEvent,
@@ -32,6 +38,7 @@ const mocks = vi.hoisted(() => {
   };
   const attendance = {
     findUnique: vi.fn(),
+    create: vi.fn(),
   };
   return {
     transaction: vi.fn(),
@@ -82,6 +89,7 @@ beforeEach(() => {
   mocks.registration.findUnique.mockReset();
   mocks.registration.count.mockReset();
   mocks.attendance.findUnique.mockReset();
+  mocks.attendance.create.mockReset();
   mocks.transaction.mockImplementation(async (callback) =>
     callback({
       event: mocks.event,
@@ -99,6 +107,7 @@ beforeEach(() => {
   mocks.registration.findUnique.mockResolvedValue(null);
   mocks.registration.count.mockResolvedValue(0);
   mocks.attendance.findUnique.mockResolvedValue(null);
+  mocks.attendance.create.mockResolvedValue({ checkedInAt: new Date() });
 });
 
 describe("createEvent", () => {
@@ -535,6 +544,147 @@ describe("createRegistration", () => {
     });
 
     expect(mocks.transaction).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("recordAttendance", () => {
+  const reference = "KASAMA-TESTREFERENCE";
+
+  const registered = {
+    eventId,
+    studentId: "c333333333333333333333333",
+    status: RegistrationStatus.REGISTERED,
+    event: { status: EventStatus.PUBLISHED },
+  };
+
+  it("persists the method and recording officer, then returns the check-in time", async () => {
+    const checkedInAt = new Date("2026-11-12T08:30:00.000Z");
+    mocks.registration.findUnique.mockResolvedValue(registered);
+    mocks.attendance.create.mockResolvedValue({ checkedInAt });
+
+    await expect(
+      recordAttendance({
+        eventId,
+        reference,
+        method: AttendanceMethod.MANUAL,
+        recordedById: actorId,
+      }),
+    ).resolves.toEqual({ ok: true, checkedInAt });
+
+    expect(mocks.attendance.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          eventId,
+          studentId: registered.studentId,
+          method: AttendanceMethod.MANUAL,
+          recordedById: actorId,
+        }),
+      }),
+    );
+  });
+
+  it("rejects an unknown reference", async () => {
+    mocks.registration.findUnique.mockResolvedValue(null);
+
+    await expect(
+      recordAttendance({
+        eventId,
+        reference,
+        method: AttendanceMethod.QR,
+        recordedById: actorId,
+      }),
+    ).resolves.toEqual({ ok: false, reason: "not_found" });
+
+    expect(mocks.attendance.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a registration that belongs to another event", async () => {
+    mocks.registration.findUnique.mockResolvedValue({
+      ...registered,
+      eventId: "c999999999999999999999999",
+    });
+
+    await expect(
+      recordAttendance({
+        eventId,
+        reference,
+        method: AttendanceMethod.QR,
+        recordedById: actorId,
+      }),
+    ).resolves.toEqual({ ok: false, reason: "wrong_event" });
+
+    expect(mocks.attendance.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a cancelled registration", async () => {
+    mocks.registration.findUnique.mockResolvedValue({
+      ...registered,
+      status: RegistrationStatus.CANCELLED,
+    });
+
+    await expect(
+      recordAttendance({
+        eventId,
+        reference,
+        method: AttendanceMethod.MANUAL,
+        recordedById: actorId,
+      }),
+    ).resolves.toEqual({ ok: false, reason: "not_registered" });
+
+    expect(mocks.attendance.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects a registration whose event is no longer published", async () => {
+    mocks.registration.findUnique.mockResolvedValue({
+      ...registered,
+      event: { status: EventStatus.CANCELLED },
+    });
+
+    await expect(
+      recordAttendance({
+        eventId,
+        reference,
+        method: AttendanceMethod.QR,
+        recordedById: actorId,
+      }),
+    ).resolves.toEqual({ ok: false, reason: "not_published" });
+
+    expect(mocks.attendance.create).not.toHaveBeenCalled();
+  });
+
+  it("returns already_attended when a check-in row already exists", async () => {
+    mocks.registration.findUnique.mockResolvedValue(registered);
+    mocks.attendance.findUnique.mockResolvedValue({ id: "attendance-1" });
+
+    await expect(
+      recordAttendance({
+        eventId,
+        reference,
+        method: AttendanceMethod.QR,
+        recordedById: actorId,
+      }),
+    ).resolves.toEqual({ ok: false, reason: "already_attended" });
+
+    expect(mocks.attendance.create).not.toHaveBeenCalled();
+  });
+
+  it("returns already_attended when a concurrent scan wins the unique constraint", async () => {
+    mocks.registration.findUnique.mockResolvedValue(registered);
+    mocks.attendance.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "7.10.0",
+      }),
+    );
+
+    await expect(
+      recordAttendance({
+        eventId,
+        reference,
+        method: AttendanceMethod.QR,
+        recordedById: actorId,
+      }),
+    ).resolves.toEqual({ ok: false, reason: "already_attended" });
   });
 });
 

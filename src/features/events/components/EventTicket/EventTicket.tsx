@@ -13,16 +13,18 @@ import {
 import { Button } from "@/components/ui/Button/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink/ButtonLink";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog/ConfirmDialog";
-import { toastError, toastSuccess } from "@/lib/hooks/toast-utils";
+import { toastActionError, toastSuccess } from "@/lib/hooks/toast-utils";
 
-import { cancelRegistration, useEvent } from "../../event-data";
+import { cancelRegistrationAction } from "../../actions";
 import { formatEventDay, formatEventTimeRange } from "../../format";
+import type { EventView } from "../../types";
 import { EventStatusPill } from "../EventStatusPill/EventStatusPill";
 import { RegistrationDetails } from "../RegistrationDetails/RegistrationDetails";
 import styles from "./EventTicket.module.css";
 
 interface EventTicketProps {
-  eventId: string;
+  event: EventView;
+  reference: string;
   attendeeName: string;
   attendeeEmail: string;
 }
@@ -42,35 +44,16 @@ function getInitials(name: string): string {
     .join("");
 }
 
-export function EventTicket({ eventId, attendeeName, attendeeEmail }: EventTicketProps) {
-  const event = useEvent(eventId);
-  const registration = event?.registration?.state === "registered" ? event.registration : null;
+export function EventTicket({ event, reference, attendeeName, attendeeEmail }: EventTicketProps) {
   const [isCancelOpen, setIsCancelOpen] = useState(false);
   const router = useRouter();
 
-  if (!event || !registration) {
-    return (
-      <div className={styles.page}>
-        <div className={styles.notFound}>
-          <h1 className={styles.notFoundTitle}>Ticket not available</h1>
-          <p className={styles.notFoundText}>
-            This registration was cancelled or the event is no longer available.
-          </p>
-          <ButtonLink href="/registrations">Back to My Registrations</ButtonLink>
-        </div>
-      </div>
-    );
-  }
-
-  function handleCancel() {
-    const result = cancelRegistration(eventId);
+  async function handleCancel() {
+    const result = await cancelRegistrationAction({ eventId: event.id });
     setIsCancelOpen(false);
 
     if (!result.success) {
-      toastError(
-        "Failed to cancel registration",
-        "The event may have already started. Refresh the page and try again.",
-      );
+      toastActionError(result, "cancel registration");
       return;
     }
 
@@ -100,7 +83,7 @@ export function EventTicket({ eventId, attendeeName, attendeeEmail }: EventTicke
 
           <div className={styles.ticketBody}>
             <RegistrationDetails
-              reference={registration.reference}
+              reference={reference}
               note="Show this code to an officer at the venue."
             />
 
@@ -184,7 +167,7 @@ export function EventTicket({ eventId, attendeeName, attendeeEmail }: EventTicke
         title="Cancel your registration?"
         confirmLabel="Cancel registration"
         cancelLabel="Keep registration"
-        onConfirm={handleCancel}
+        onConfirm={() => void handleCancel()}
       >
         Your seat will be released. You can register again before the event starts.
       </ConfirmDialog>

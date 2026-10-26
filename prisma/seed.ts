@@ -2,7 +2,13 @@ import "dotenv/config";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { NotificationAudience, Role } from "../src/generated/prisma/browser";
+import { createRegistrationReference } from "../src/features/events/reference";
+import {
+  AttendanceMethod,
+  EventStatus,
+  NotificationAudience,
+  Role,
+} from "../src/generated/prisma/browser";
 import { PrismaClient } from "../src/generated/prisma/client";
 
 const connectionString = process.env.DATABASE_URL;
@@ -59,12 +65,14 @@ async function seedUsers() {
       name: "Carlo Reyes",
       role: Role.STUDENT,
       isActive: true,
+      studentNumber: "2026-00001",
     },
     {
       email: STUDENT_TWO_EMAIL,
       name: "Ana Dela Cruz",
       role: Role.STUDENT,
       isActive: true,
+      studentNumber: "2026-00002",
     },
     {
       email: OFFICER_TWO_EMAIL,
@@ -77,6 +85,7 @@ async function seedUsers() {
       name: "Grace Lim",
       role: Role.STUDENT,
       isActive: true,
+      studentNumber: "2026-00003",
     },
     {
       email: INACTIVE_STUDENT_EMAIL,
@@ -90,12 +99,18 @@ async function seedUsers() {
   for (const user of users) {
     const row = await prisma.user.upsert({
       where: { email: user.email },
-      update: { name: user.name, role: user.role, isActive: user.isActive },
+      update: {
+        name: user.name,
+        role: user.role,
+        isActive: user.isActive,
+        studentNumber: user.studentNumber ?? null,
+      },
       create: {
         email: user.email,
         name: user.name,
         role: user.role,
         isActive: user.isActive,
+        studentNumber: user.studentNumber ?? null,
         emailVerified: new Date(),
       },
     });
@@ -161,6 +176,9 @@ async function seedEvents(userByEmail: Map<string, { id: string }>) {
       startAt: event.startAt,
       endAt: event.endAt,
       createdById,
+      status: EventStatus.PUBLISHED,
+      publishedAt: new Date(),
+      registrationClosesAt: event.startAt,
     };
 
     const existing = await prisma.event.findFirst({ where: { title: event.title } });
@@ -173,10 +191,48 @@ async function seedEvents(userByEmail: Map<string, { id: string }>) {
   return byTitle;
 }
 
+async function seedRegistrations(
+  eventByTitle: Map<string, { id: string }>,
+  userByEmail: Map<string, { id: string }>,
+) {
+  const groups = [
+    {
+      eventTitle: "General Assembly 2026",
+      studentEmails: [STUDENT_EMAIL, STUDENT_TWO_EMAIL, STUDENT_THREE_EMAIL],
+    },
+    {
+      eventTitle: "Tech Talk: Introduction to Artificial Intelligence",
+      studentEmails: [STUDENT_EMAIL, STUDENT_THREE_EMAIL],
+    },
+    { eventTitle: "Campus Clean-Up Drive", studentEmails: [STUDENT_TWO_EMAIL] },
+    { eventTitle: "Coding Bootcamp: Web Development 101", studentEmails: [STUDENT_EMAIL] },
+    { eventTitle: "Blood Donation Drive", studentEmails: [STUDENT_THREE_EMAIL] },
+  ];
+
+  for (const group of groups) {
+    const eventId = eventByTitle.get(group.eventTitle)?.id;
+    if (!eventId) continue;
+
+    for (const email of group.studentEmails) {
+      const studentId = userByEmail.get(email)?.id;
+      if (!studentId) continue;
+
+      const row = await prisma.registration.upsert({
+        where: { eventId_studentId: { eventId, studentId } },
+        update: {},
+        create: { eventId, studentId, reference: createRegistrationReference() },
+        select: { reference: true },
+      });
+      console.log(`Seeded registration: ${email} @ ${group.eventTitle} (${row.reference})`);
+    }
+  }
+}
+
 async function seedAttendances(
   eventByTitle: Map<string, { id: string }>,
   userByEmail: Map<string, { id: string }>,
 ) {
+  const recordedById = userByEmail.get(OFFICER_EMAIL)?.id;
   const attendances = [
     { eventTitle: "General Assembly 2026", studentEmail: STUDENT_EMAIL },
     { eventTitle: "General Assembly 2026", studentEmail: STUDENT_TWO_EMAIL },
@@ -196,10 +252,12 @@ async function seedAttendances(
 
     await prisma.attendance.upsert({
       where: { eventId_studentId: { eventId, studentId } },
-      update: {},
+      update: { method: AttendanceMethod.MANUAL, recordedById },
       create: {
         eventId,
         studentId,
+        method: AttendanceMethod.MANUAL,
+        recordedById,
         photoUrl: `seed/attendance/${studentId}-${eventId}.jpg`,
       },
     });
@@ -332,6 +390,7 @@ async function seedPendingAssignment(assignedById: string) {
 async function main() {
   const userByEmail = await seedUsers();
   const eventByTitle = await seedEvents(userByEmail);
+  await seedRegistrations(eventByTitle, userByEmail);
   await seedAttendances(eventByTitle, userByEmail);
   const notificationByTitle = await seedNotifications(userByEmail, eventByTitle);
   await seedNotificationReads(notificationByTitle, userByEmail);

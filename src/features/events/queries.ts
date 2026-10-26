@@ -1,4 +1,5 @@
 import {
+  AttendanceMethod,
   EventApprovalAction,
   EventStatus,
   RegistrationStatus,
@@ -12,6 +13,7 @@ import {
   type CursorPage,
 } from "@/lib/domain/pagination";
 import { prisma } from "@/lib/infra/prisma";
+import { getEndOfDay, getStartOfDay } from "@/lib/primitives/date";
 
 import { getRemainingSeats, isEventStarted, resolveEventStatus } from "./status";
 import type { EventRegistration, EventView, StudentEvent } from "./types";
@@ -559,5 +561,274 @@ export async function getRegistrationTicket(
       now,
     ),
     registration: { reference: registration.reference, state: "registered" },
+  };
+}
+
+export interface AttendanceEventOption {
+  id: string;
+  title: string;
+  startAt: Date;
+  endAt: Date | null;
+  venue: string;
+  registeredCount: number;
+}
+
+/**
+ * Lists published events that have registered students, most recent first.
+ * Every officer may monitor attendance for any published event; the page and
+ * action guards enforce the `attendance.*` capabilities.
+ */
+export async function getAttendanceEventOptions(): Promise<AttendanceEventOption[]> {
+  const events = await prisma.event.findMany({
+    where: {
+      status: EventStatus.PUBLISHED,
+      registrations: { some: { status: RegistrationStatus.REGISTERED } },
+    },
+    orderBy: [{ startAt: "desc" }, { id: "desc" }],
+    select: {
+      id: true,
+      title: true,
+      startAt: true,
+      endAt: true,
+      venue: true,
+      _count: {
+        select: { registrations: { where: { status: RegistrationStatus.REGISTERED } } },
+      },
+    },
+  });
+
+  return events.map(({ _count, ...event }) => ({
+    ...event,
+    registeredCount: _count.registrations,
+  }));
+}
+
+export interface AttendanceStats {
+  registered: number;
+  checkedIn: number;
+  notCheckedIn: number;
+  todayCheckIns: number;
+  completionRate: number;
+}
+
+/**
+ * Aggregates the selected event's attendance from persisted records only.
+ * Check-ins are counted for students with an active registration, so legacy
+ * or walk-in attendance rows never inflate the completion rate.
+ */
+export async function getEventAttendanceStats(eventId: string): Promise<AttendanceStats> {
+  const now = new Date();
+  const registeredWhere = { eventId, status: RegistrationStatus.REGISTERED };
+
+  const [registered, checkedIn, todayCheckIns] = await Promise.all([
+    prisma.registration.count({ where: registeredWhere }),
+    prisma.attendance.count({
+      where: { eventId, student: { registrations: { some: registeredWhere } } },
+    }),
+    prisma.attendance.count({
+      where: {
+        eventId,
+        checkedInAt: { gte: getStartOfDay(now), lte: getEndOfDay(now) },
+        student: { registrations: { some: registeredWhere } },
+      },
+    }),
+  ]);
+
+  return {
+    registered,
+    checkedIn,
+    notCheckedIn: Math.max(0, registered - checkedIn),
+    todayCheckIns,
+    completionRate: registered === 0 ? 0 : Math.round((checkedIn / registered) * 100),
+  };
+}
+
+export interface AttendanceRecordRow {
+  id: string;
+  eventId: string;
+  eventTitle: string;
+  studentName: string;
+  studentNumber: string | null;
+  reference: string | null;
+  checkedInAt: Date;
+  method: AttendanceMethod;
+  recordedByName: string | null;
+}
+
+export interface AttendancePageQuery {
+  eventId?: string;
+  search?: string;
+  method?: AttendanceMethod;
+  date?: string;
+  cursor?: string;
+  pageSize?: number;
+}
+
+export type AttendancePage = CursorPage<AttendanceRecordRow>;
+
+/**
+ * Reads attendance records newest first with optional event, method, day, and
+ * text filters. Text search covers student name, student number, and the
+ * exact registration reference.
+ */
+export async function getAttendancePage(query: AttendancePageQuery = {}): Promise<AttendancePage> {
+  const { eventId, search = "", method, date, cursor: rawCursor, pageSize } = query;
+  const resolvedPageSize = resolveCursorPageSize(pageSize);
+  const cursor = decodeTimestampCursor(rawCursor);
+  const normalizedSearch = search.trim();
+  const conditions: Prisma.AttendanceWhereInput[] = [];
+
+  if (eventId) conditions.push({ eventId });
+  if (method) conditions.push({ method });
+  if (date) {
+    const day = new Date(`${date}T00:00:00`);
+    conditions.push({ checkedInAt: { gte: getStartOfDay(day), lte: getEndOfDay(day) } });
+  }
+
+  if (normalizedSearch) {
+    const referenceMatch = await prisma.registration.findUnique({
+      where: { reference: normalizedSearch.toUpperCase() },
+      select: { eventId: true, studentId: true },
+    });
+    conditions.push({
+      OR: [
+        { student: { name: { contains: normalizedSearch, mode: "insensitive" } } },
+        { student: { studentNumber: { contains: normalizedSearch, mode: "insensitive" } } },
+        ...(referenceMatch
+          ? [{ eventId: referenceMatch.eventId, studentId: referenceMatch.studentId }]
+          : []),
+      ],
+    });
+  }
+
+  if (cursor) {
+    conditions.push({
+      OR: [
+        { checkedInAt: { lt: cursor.timestamp } },
+        { checkedInAt: cursor.timestamp, id: { lt: cursor.id } },
+      ],
+    });
+  }
+
+  const attendances = await prisma.attendance.findMany({
+    where: conditions.length > 0 ? { AND: conditions } : {},
+    orderBy: [{ checkedInAt: "desc" }, { id: "desc" }],
+    take: resolvedPageSize + 1,
+    select: {
+      id: true,
+      eventId: true,
+      studentId: true,
+      checkedInAt: true,
+      method: true,
+      event: { select: { title: true } },
+      student: { select: { name: true, studentNumber: true } },
+      recordedBy: { select: { name: true } },
+    },
+  });
+
+  const hasMore = attendances.length > resolvedPageSize;
+  const page = hasMore ? attendances.slice(0, resolvedPageSize) : attendances;
+  const last = page.at(-1);
+
+  const references =
+    page.length > 0
+      ? await prisma.registration.findMany({
+          where: {
+            OR: page.map((row) => ({ eventId: row.eventId, studentId: row.studentId })),
+          },
+          select: { eventId: true, studentId: true, reference: true },
+        })
+      : [];
+  const referenceByStudent = new Map(
+    references.map((registration) => [
+      `${registration.eventId}:${registration.studentId}`,
+      registration.reference,
+    ]),
+  );
+
+  return {
+    rows: page.map((row) => ({
+      id: row.id,
+      eventId: row.eventId,
+      eventTitle: row.event.title,
+      studentName: row.student.name,
+      studentNumber: row.student.studentNumber,
+      reference: referenceByStudent.get(`${row.eventId}:${row.studentId}`) ?? null,
+      checkedInAt: row.checkedInAt,
+      method: row.method,
+      recordedByName: row.recordedBy?.name ?? null,
+    })),
+    nextCursor:
+      hasMore && last ? encodeTimestampCursor({ timestamp: last.checkedInAt, id: last.id }) : null,
+  };
+}
+
+export async function getRecentAttendance(
+  eventId: string,
+  limit = 5,
+): Promise<AttendanceRecordRow[]> {
+  const page = await getAttendancePage({ eventId, pageSize: limit });
+  return page.rows;
+}
+
+export interface AttendanceVerification {
+  eventId: string;
+  eventTitle: string;
+  reference: string;
+  studentName: string;
+  studentNumber: string | null;
+  alreadyCheckedInAt: Date | null;
+}
+
+export type AttendanceVerificationResult =
+  | { ok: true; verification: AttendanceVerification }
+  | {
+      ok: false;
+      reason: "not_found" | "wrong_event" | "not_registered" | "not_published";
+    };
+
+/**
+ * Resolves a registration reference for officer verification. This only reads
+ * records; attendance is written exclusively by `recordAttendance`.
+ */
+export async function getAttendanceVerification(
+  eventId: string,
+  reference: string,
+): Promise<AttendanceVerificationResult> {
+  const registration = await prisma.registration.findUnique({
+    where: { reference },
+    select: {
+      eventId: true,
+      studentId: true,
+      status: true,
+      student: { select: { name: true, studentNumber: true } },
+      event: { select: { title: true, status: true } },
+    },
+  });
+
+  if (!registration) return { ok: false, reason: "not_found" };
+  if (registration.eventId !== eventId) return { ok: false, reason: "wrong_event" };
+  if (registration.status !== RegistrationStatus.REGISTERED) {
+    return { ok: false, reason: "not_registered" };
+  }
+  if (registration.event.status !== EventStatus.PUBLISHED) {
+    return { ok: false, reason: "not_published" };
+  }
+
+  const attendance = await prisma.attendance.findUnique({
+    where: { eventId_studentId: { eventId, studentId: registration.studentId } },
+    select: { checkedInAt: true },
+  });
+
+  return {
+    ok: true,
+    verification: {
+      eventId,
+      eventTitle: registration.event.title,
+      reference,
+      studentName: registration.student.name,
+      studentNumber: registration.student.studentNumber,
+      alreadyCheckedInAt: attendance?.checkedInAt ?? null,
+    },
   };
 }

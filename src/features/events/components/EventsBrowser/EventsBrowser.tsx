@@ -5,17 +5,17 @@ import { useState } from "react";
 import { SearchField } from "@/components/ui/SearchField/SearchField";
 import { Select, SelectItem } from "@/components/ui/Select/Select";
 
-import { filterEvents, useEvents } from "../../event-data";
-import type { EventFilter } from "../../types";
+import { filterEvents } from "../../filter";
+import type { EventFilter, EventView } from "../../types";
 import { EventCard } from "../EventCard/EventCard";
 import styles from "./EventsBrowser.module.css";
 
 interface EventsBrowserProps {
+  events: EventView[];
   initialStatus?: EventFilter["status"];
 }
 
-export function EventsBrowser({ initialStatus = "all" }: EventsBrowserProps) {
-  const events = useEvents();
+export function EventsBrowser({ events, initialStatus = "all" }: EventsBrowserProps) {
   const [search, setSearch] = useState("");
   const [time, setTime] = useState<EventFilter["time"]>("upcoming");
   const [status, setStatus] = useState<EventFilter["status"]>(initialStatus);

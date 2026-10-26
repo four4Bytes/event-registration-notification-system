@@ -2,15 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import {
   ApproveEventSchema,
+  AttendancePageQuerySchema,
   CancelEventSchema,
   CancelRegistrationSchema,
   CreateEventSchema,
   EventPageQuerySchema,
+  RecordAttendanceSchema,
   RegisterForEventSchema,
   RequestEventRevisionSchema,
   SubmitEventSchema,
   UnpublishEventSchema,
   UpdateEventSchema,
+  VerifyAttendanceSchema,
 } from "./schemas";
 
 const eventId = "c111111111111111111111111";
@@ -219,5 +222,68 @@ describe("CancelRegistrationSchema", () => {
 
   it("rejects an invalid event id", () => {
     expect(CancelRegistrationSchema.safeParse({ eventId: "not-an-id" }).success).toBe(false);
+  });
+});
+
+describe("VerifyAttendanceSchema", () => {
+  it("accepts an event id and reference, normalizing the reference to uppercase", () => {
+    const parsed = VerifyAttendanceSchema.parse({ eventId, reference: "  kasama-abc123  " });
+
+    expect(parsed.reference).toBe("KASAMA-ABC123");
+  });
+
+  it("rejects an empty reference", () => {
+    expect(VerifyAttendanceSchema.safeParse({ eventId, reference: "   " }).success).toBe(false);
+  });
+
+  it("rejects an invalid event id", () => {
+    expect(
+      VerifyAttendanceSchema.safeParse({ eventId: "not-an-id", reference: "KASAMA-ABC123" })
+        .success,
+    ).toBe(false);
+  });
+});
+
+describe("RecordAttendanceSchema", () => {
+  it.each([["QR"], ["MANUAL"]])("accepts the %s method", (method) => {
+    expect(
+      RecordAttendanceSchema.safeParse({ eventId, reference: "KASAMA-ABC123", method }).success,
+    ).toBe(true);
+  });
+
+  it("rejects an unknown method", () => {
+    expect(
+      RecordAttendanceSchema.safeParse({
+        eventId,
+        reference: "KASAMA-ABC123",
+        method: "SMS",
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("AttendancePageQuerySchema", () => {
+  it("accepts an empty query", () => {
+    expect(AttendancePageQuerySchema.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts event, method, date, and search filters", () => {
+    expect(
+      AttendancePageQuerySchema.safeParse({
+        eventId,
+        method: "MANUAL",
+        date: "2026-11-12",
+        search: "Carlo",
+        pageSize: 20,
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects an invalid date", () => {
+    expect(AttendancePageQuerySchema.safeParse({ date: "12/11/2026" }).success).toBe(false);
+  });
+
+  it("rejects a page size above 50", () => {
+    expect(AttendancePageQuerySchema.safeParse({ pageSize: 51 }).success).toBe(false);
   });
 });

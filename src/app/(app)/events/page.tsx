@@ -13,10 +13,5 @@ export default async function EventsPage({ searchParams }: EventsPageProps) {
   const studentId = session?.user?.role === Role.STUDENT ? session.user.id : undefined;
   const events = await getPublishedEvents({ studentId });
 
-  return (
-    <EventsBrowser
-      events={events}
-      initialStatus={status === "open" ? "open" : "all"}
-    />
-  );
+  return <EventsBrowser events={events} initialStatus={status === "open" ? "open" : "all"} />;
 }

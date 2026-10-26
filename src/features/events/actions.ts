@@ -18,31 +18,41 @@ import {
   cancelRegistration,
   createEvent,
   createRegistration,
+  recordAttendance,
   requestEventRevision,
   submitEvent,
   updateEvent,
 } from "./mutations";
-import { getEventPage, type EventPage } from "./queries";
+import {
+  getAttendanceVerification,
+  getEventPage,
+  type AttendanceVerification,
+  type EventPage,
+} from "./queries";
 import {
   ApproveEventSchema,
   CancelEventSchema,
   CancelRegistrationSchema,
   CreateEventSchema,
   EventPageQuerySchema,
+  RecordAttendanceSchema,
   RegisterForEventSchema,
   RequestEventRevisionSchema,
   SubmitEventSchema,
   UnpublishEventSchema,
   UpdateEventSchema,
+  VerifyAttendanceSchema,
   type ApproveEventPayload,
   type CancelEventPayload,
   type CancelRegistrationPayload,
   type CreateEventPayload,
+  type RecordAttendancePayload,
   type RegisterForEventPayload,
   type RequestEventRevisionPayload,
   type SubmitEventPayload,
   type UnpublishEventPayload,
   type UpdateEventPayload,
+  type VerifyAttendancePayload,
 } from "./schemas";
 
 function approvalFailure(reason: "not_found" | "not_submitted"): ActionStatusResponse {
@@ -395,5 +405,98 @@ export async function cancelRegistrationAction(
     return { success: true };
   } catch (error) {
     return toActionResponse(error, "cancel registration");
+  }
+}
+
+function attendanceVerificationFailure(
+  reason: "not_found" | "wrong_event" | "not_registered" | "not_published",
+): ActionStatusResponse {
+  switch (reason) {
+    case "not_found":
+      return actionError(
+        "not_found",
+        "Reference not found",
+        "No registration matches this reference. Check the code and try again.",
+      );
+    case "wrong_event":
+      return actionConflict(
+        "Reference belongs to another event",
+        "Switch to the event this student registered for, then try again.",
+      );
+    case "not_registered":
+      return actionConflict(
+        "Registration is not active",
+        "This registration was cancelled, so attendance cannot be recorded.",
+      );
+    case "not_published":
+      return actionConflict(
+        "Event is not open",
+        "Attendance can only be recorded for published events.",
+      );
+  }
+}
+
+function attendanceRecordFailure(
+  reason: "not_found" | "wrong_event" | "not_registered" | "not_published" | "already_attended",
+): ActionStatusResponse {
+  if (reason === "already_attended") {
+    return actionConflict(
+      "Already checked in",
+      "Attendance for this student was already recorded for this event.",
+    );
+  }
+  return attendanceVerificationFailure(reason);
+}
+
+/**
+ * Resolves a scanned or manually entered registration reference for the
+ * selected event without recording attendance.
+ *
+ * @param payload - The selected event id and registration reference.
+ * @returns The verified student and event summary, or a failure envelope.
+ * @throws {ForbiddenError} When the caller lacks `attendance.scan` and
+ *                          `attendance.manual`.
+ */
+export async function verifyAttendanceAction(
+  payload: VerifyAttendancePayload,
+): Promise<ActionDataResponse<AttendanceVerification>> {
+  try {
+    await requirePermission("attendance.scan", "attendance.manual");
+    const parsed = VerifyAttendanceSchema.safeParse(payload);
+    if (!parsed.success) return actionInvalid("attendance reference");
+    const result = await getAttendanceVerification(parsed.data.eventId, parsed.data.reference);
+    if (!result.ok) return attendanceVerificationFailure(result.reason);
+    return { success: true, data: result.verification };
+  } catch (error) {
+    return toActionResponse(error, "verify attendance");
+  }
+}
+
+/**
+ * Records attendance after officer verification.
+ *
+ * @param payload - The selected event id, registration reference, and entry
+ *                  method (`QR` from the camera, `MANUAL` from the form).
+ * @returns The persisted check-in time, or a failure envelope.
+ * @throws {ForbiddenError} When the caller lacks `attendance.scan` and
+ *                          `attendance.manual`.
+ */
+export async function recordAttendanceAction(
+  payload: RecordAttendancePayload,
+): Promise<ActionDataResponse<{ checkedInAt: Date }>> {
+  try {
+    const actor = await requirePermission("attendance.scan", "attendance.manual");
+    const parsed = RecordAttendanceSchema.safeParse(payload);
+    if (!parsed.success) return actionInvalid("attendance");
+    const result = await recordAttendance({
+      eventId: parsed.data.eventId,
+      reference: parsed.data.reference,
+      method: parsed.data.method,
+      recordedById: actor.id,
+    });
+    if (!result.ok) return attendanceRecordFailure(result.reason);
+    return { success: true, data: { checkedInAt: result.checkedInAt } };
+  } catch (error) {
+    return toActionResponse(error, "record attendance");
   }
 }

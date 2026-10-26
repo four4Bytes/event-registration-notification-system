@@ -21,6 +21,14 @@ const ADMIN_HREFS = [
 
 const STUDENT_HREFS = ["/dashboard", "/events", "/registrations", "/attendance", "/notifications"];
 
+const OFFICER_HREFS = [
+  "/dashboard",
+  "/events",
+  "/attendance/scanner",
+  "/attendance/records",
+  "/notifications",
+];
+
 describe("getVisibleNavItems", () => {
   it.each([
     ["Admin", Role.ADMIN],
@@ -35,14 +43,26 @@ describe("getVisibleNavItems", () => {
     expect(visible).not.toContain("/events");
     expect(visible).not.toContain("/registrations");
     expect(visible).not.toContain("/attendance");
+    expect(visible).not.toContain("/attendance/scanner");
+    expect(visible).not.toContain("/attendance/records");
+  });
+
+  it("keeps the student nav for Students", () => {
+    expect(hrefs(Role.STUDENT)).toEqual(STUDENT_HREFS);
   });
 
   it.each([
-    ["Student", Role.STUDENT, null],
     ["Officer", Role.OFFICER, null],
     ["President", Role.OFFICER, OfficerPosition.PRESIDENT],
-  ])("keeps the student nav for %s", (_label, role, position) => {
-    expect(hrefs(role, position)).toEqual(STUDENT_HREFS);
+  ])("shows the attendance officer nav to %s", (_label, role, position) => {
+    expect(hrefs(role, position)).toEqual(OFFICER_HREFS);
+  });
+
+  it("hides the attendance workflow from Students", () => {
+    const visible = hrefs(Role.STUDENT);
+
+    expect(visible).not.toContain("/attendance/scanner");
+    expect(visible).not.toContain("/attendance/records");
   });
 
   it.each([

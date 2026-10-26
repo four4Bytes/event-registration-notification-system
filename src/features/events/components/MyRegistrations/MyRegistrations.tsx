@@ -1,17 +1,23 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/Button/Button";
 import { ButtonLink } from "@/components/ui/ButtonLink/ButtonLink";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog/ConfirmDialog";
-import { toastError, toastSuccess } from "@/lib/hooks/toast-utils";
+import { toastActionError, toastSuccess } from "@/lib/hooks/toast-utils";
 
-import { cancelRegistration, useEvents } from "../../event-data";
+import { cancelRegistrationAction } from "../../actions";
 import { formatEventDateMedium } from "../../format";
 import { getRegistrationGroups, type RegistrationTab } from "../../registrations";
+import type { EventView } from "../../types";
 import { EventStatusPill } from "../EventStatusPill/EventStatusPill";
 import styles from "./MyRegistrations.module.css";
+
+interface MyRegistrationsProps {
+  events: EventView[];
+}
 
 const tabs: { id: RegistrationTab; label: string }[] = [
   { id: "upcoming", label: "Upcoming" },
@@ -34,8 +40,8 @@ const emptyStates: Record<RegistrationTab, { title: string; text: string }> = {
   },
 };
 
-export function MyRegistrations() {
-  const events = useEvents();
+export function MyRegistrations({ events }: MyRegistrationsProps) {
+  const router = useRouter();
   const groups = getRegistrationGroups(events);
   const [activeTab, setActiveTab] = useState<RegistrationTab>("upcoming");
   const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
@@ -43,17 +49,14 @@ export function MyRegistrations() {
   const rows = groups[activeTab];
   const emptyState = emptyStates[activeTab];
 
-  function handleCancel() {
+  async function handleCancel() {
     if (!pendingCancelId) return;
 
-    const result = cancelRegistration(pendingCancelId);
+    const result = await cancelRegistrationAction({ eventId: pendingCancelId });
     setPendingCancelId(null);
 
     if (!result.success) {
-      toastError(
-        "Failed to cancel registration",
-        "The event may have already started. Refresh the page and try again.",
-      );
+      toastActionError(result, "cancel registration");
       return;
     }
 
@@ -61,6 +64,7 @@ export function MyRegistrations() {
       "Registration cancelled",
       "Your seat has been released. Your confirmation reference is kept.",
     );
+    router.refresh();
   }
 
   return (
@@ -167,7 +171,7 @@ export function MyRegistrations() {
         title="Cancel your registration?"
         confirmLabel="Cancel registration"
         cancelLabel="Keep registration"
-        onConfirm={handleCancel}
+        onConfirm={() => void handleCancel()}
       >
         Your seat will be released. You can register again before the event starts.
       </ConfirmDialog>
