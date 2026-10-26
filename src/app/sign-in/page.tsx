@@ -8,7 +8,7 @@ import { auth } from "@/lib/infra/auth";
 import styles from "./page.module.css";
 
 function resolveCallbackUrl(value: string | undefined): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/notifications";
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/dashboard";
   return value;
 }
 
