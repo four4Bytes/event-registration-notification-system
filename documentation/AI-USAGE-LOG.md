@@ -53,3 +53,23 @@ date.
 
 Row 9's commit `25078a9` landed on 16 Oct, but the session message that names it is the 17 Oct follow-up ("The enum
 value already exists in committed code (25078a9)"), so that message is what the capture shows.
+
+## Final Week 7. Officer attendance session record
+
+The Week 7 officer attendance and database-backed registration work was produced in session
+`ses_e883954f0ffebkxutKDiK0nsrW` (OpenCode, DeepSeek V4.1 Flash) on 26-27 October 2026. The full record - requests,
+outputs, files, verification, decisions, and limitations - is in
+[`ai-evidence/final-wk7-session-record.md`](../ai-evidence/final-wk7-session-record.md).
+
+| Area                                                                       | Commit                                      | Evidence                                               |
+| -------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------ |
+| Officer dashboard, QR scanner, manual entry, records, attendance migration | `54bcb76` (tag `final-wk7`)                 | `src/features/events/attendance.integration.test.ts`   |
+| Database-backed student registration and cancellation                      | `54bcb76` (tag `final-wk7`)                 | `src/features/events/registration.integration.test.ts` |
+| Verification                                                               | 442 unit, 7 integration, lint, types, build | Refer to the session record                            |
+
+The session reused the existing `KASAMA-...` registration reference as the QR payload and kept every authorization
+decision in the existing guards. No new evidence screenshots were captured for this session; the record, the tagged
+commit, and the tests above are the evidence trail.
+
+Capture: one PNG per OpenCode session created during the week - `ai-evidence/08-final-wk7-session-01.png` through
+`-09.png`, indexed in [`ai-evidence/final-wk7-sessions.md`](../ai-evidence/final-wk7-sessions.md).
