@@ -22,7 +22,6 @@ export interface StudentEvent {
   registrationClosesAt: string;
   capacity: number;
   seatsTaken: number;
-  host: "organization" | "club";
   registration: EventRegistration | null;
   mockReference: string;
 }
@@ -35,7 +34,7 @@ export interface EventView extends StudentEvent {
 
 export type EventDetailData = Pick<
   StudentEvent,
-  "title" | "organizer" | "description" | "venue" | "startAt" | "endAt" | "host"
+  "title" | "organizer" | "description" | "venue" | "startAt" | "endAt"
 >;
 
 export type EventMutationFailureReason =
@@ -46,7 +45,6 @@ export type EventMutationResult =
 
 export interface EventFilter {
   search: string;
-  host: "all" | "organization" | "club";
   time: "upcoming" | "all";
   status: "all" | "open";
 }

@@ -17,8 +17,6 @@ export interface NotificationRow {
   title: string;
   body: string;
   audience: NotificationAudience;
-  clubName: string | null;
-  clubShortName: string | null;
   eventId: string | null;
   eventTitle: string | null;
   eventStartAt: Date | null;
@@ -78,7 +76,7 @@ export async function getNotificationPage({
   const rows = await prisma.notification.findMany({
     where: {
       AND: [
-        buildNotificationAudienceFilter(scope),
+        buildNotificationAudienceFilter(),
         buildReadStatusFilter(query.filters?.status, scope.userId),
         buildSearchFilter(search),
         buildCursorFilter(cursor, ascending),
@@ -87,7 +85,6 @@ export async function getNotificationPage({
     orderBy: [{ createdAt: direction }, { id: direction }],
     take: pageSize + 1,
     include: {
-      club: { select: { name: true, shortName: true } },
       event: { select: { id: true, title: true, startAt: true, venue: true } },
       reads: { where: { userId: scope.userId }, select: { id: true } },
     },
@@ -103,8 +100,6 @@ export async function getNotificationPage({
       title: row.title,
       body: row.body,
       audience: row.audience,
-      clubName: row.club?.name ?? null,
-      clubShortName: row.club?.shortName ?? null,
       eventId: row.event?.id ?? null,
       eventTitle: row.event?.title ?? null,
       eventStartAt: row.event?.startAt ?? null,
@@ -120,22 +115,8 @@ export async function getNotificationPage({
 export async function getUnreadNotificationCount(scope: NotificationScope): Promise<number> {
   return prisma.notification.count({
     where: {
-      ...buildNotificationAudienceFilter(scope),
+      ...buildNotificationAudienceFilter(),
       reads: { none: { userId: scope.userId } },
     },
-  });
-}
-
-export async function getNotificationRecipients(
-  audience: NotificationAudience,
-  clubId: string | null,
-): Promise<{ email: string }[]> {
-  return prisma.user.findMany({
-    where: {
-      isActive: true,
-      email: { endsWith: "@acdeducation.com" },
-      ...(audience === NotificationAudience.CLUB ? { clubId } : {}),
-    },
-    select: { email: true },
   });
 }

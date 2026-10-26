@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { NotificationAudience } from "@/generated/prisma/browser";
+
 import { markAllNotificationsRead } from "./mutations";
 
 const prismaMocks = vi.hoisted(() => ({
@@ -14,7 +16,7 @@ vi.mock("@/lib/infra/prisma", () => ({
   },
 }));
 
-const scope = { userId: "user-1", clubId: "club-1", viewAll: false };
+const scope = { userId: "user-1" };
 
 beforeEach(() => {
   prismaMocks.findMany.mockReset();
@@ -27,6 +29,13 @@ describe("markAllNotificationsRead", () => {
 
     await markAllNotificationsRead(scope);
 
+    expect(prismaMocks.findMany).toHaveBeenCalledWith({
+      where: {
+        audience: NotificationAudience.ALL,
+        reads: { none: { userId: "user-1" } },
+      },
+      select: { id: true },
+    });
     expect(prismaMocks.createMany).toHaveBeenCalledWith({
       data: [
         { notificationId: "n1", userId: "user-1" },

@@ -6,7 +6,7 @@ import type { StudentEvent } from "./types";
 const baseEvent: StudentEvent = {
   id: "annual-science-fair-2026",
   title: "Annual Science Fair 2026",
-  organizer: "Office of Student Affairs",
+  organizer: "KASAMA",
   description: "A showcase of student research.",
   venue: "Main Gymnasium",
   startAt: "2026-11-12T08:00:00+08:00",
@@ -15,7 +15,6 @@ const baseEvent: StudentEvent = {
   registrationClosesAt: "2026-11-10T17:00:00+08:00",
   capacity: 400,
   seatsTaken: 280,
-  host: "organization",
   registration: null,
   mockReference: "CH-2026-00418",
 };

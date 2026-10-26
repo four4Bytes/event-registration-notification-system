@@ -165,15 +165,15 @@ through `requirePagePermission`; actions return the forbidden envelope.
 
 New rows (matrix and `documentation/RBAC.md` edited together):
 
-| Permission                | Admin | Officer  | Student |
-| ------------------------- | :---: | :------: | :-----: |
-| `officer.assign_president`|  YES  |    NO    |   NO    |
-| `task.assign`             |  YES  | OWN_CLUB |   NO    |
-| `task.read_club`          |  YES  | OWN_CLUB |   NO    |
-| `task.read_own`           |  NO   |   YES    |   NO    |
-| `task.update_own`         |  NO   |   YES    |   NO    |
-| `attendance.scan`         |  NO   | OWN_CLUB |   NO    |
-| `attendance.view_results` |  YES  | OWN_CLUB |   NO    |
+| Permission                 | Admin | Officer  | Student |
+| -------------------------- | :---: | :------: | :-----: |
+| `officer.assign_president` |  YES  |    NO    |   NO    |
+| `task.assign`              |  YES  | OWN_CLUB |   NO    |
+| `task.read_club`           |  YES  | OWN_CLUB |   NO    |
+| `task.read_own`            |  NO   |   YES    |   NO    |
+| `task.update_own`          |  NO   |   YES    |   NO    |
+| `attendance.scan`          |  NO   | OWN_CLUB |   NO    |
+| `attendance.view_results`  |  YES  | OWN_CLUB |   NO    |
 
 `notification.create` changes from Officer `YES` to `OWN_CLUB`; position
 narrows it to `PRESIDENT`.

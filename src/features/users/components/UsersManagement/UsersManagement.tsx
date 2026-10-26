@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { FaBan, FaPencil, FaPeopleGroup, FaUserCheck } from "react-icons/fa6";
+import { FaBan, FaCrown, FaPencil, FaUserCheck } from "react-icons/fa6";
 
 import { Button } from "@/components/ui/Button/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog/ConfirmDialog";
@@ -11,16 +11,15 @@ import { ServerDataTable } from "@/components/ui/ServerDataTable/ServerDataTable
 import { StatusBadge } from "@/components/ui/StatusBadge/StatusBadge";
 import type { FilterDefinition } from "@/components/ui/TableFilter/TableFilter";
 import { Tooltip, TooltipTrigger } from "@/components/ui/Tooltip/Tooltip";
-import { ClubLabel } from "@/features/clubs/components/ClubLabel/ClubLabel";
 import {
   cancelPendingInvitationAction,
   getUserManagementPageAction,
   setUserActiveAction,
 } from "@/features/users/actions";
 import { AddUserModal } from "@/features/users/components/AddUserModal/AddUserModal";
-import { AssignClubModal } from "@/features/users/components/AssignClubModal/AssignClubModal";
 import { EditRoleModal } from "@/features/users/components/EditRoleModal/EditRoleModal";
-import { roleLabels } from "@/features/users/constants";
+import { SetPositionModal } from "@/features/users/components/SetPositionModal/SetPositionModal";
+import { officerPositionLabels, roleLabels } from "@/features/users/constants";
 import type { UserManagementRow } from "@/features/users/queries";
 import { Role } from "@/generated/prisma/browser";
 import { toastActionError, toastSuccess } from "@/lib/hooks/toast-utils";
@@ -30,6 +29,8 @@ import styles from "./UsersManagement.module.css";
 interface UsersManagementProps {
   initialRows: UserManagementRow[];
   initialCursor: string | null;
+  currentUserId: string;
+  presidentName: string | null;
 }
 
 const assignableRoles = [Role.STUDENT, Role.OFFICER, Role.ADMIN] as const;
@@ -56,12 +57,17 @@ const userFilters: FilterDefinition[] = [
   },
 ];
 
-export function UsersManagement({ initialRows, initialCursor }: UsersManagementProps) {
+export function UsersManagement({
+  initialRows,
+  initialCursor,
+  currentUserId,
+  presidentName,
+}: UsersManagementProps) {
   const router = useRouter();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
   const [roleRow, setRoleRow] = useState<UserManagementRow | null>(null);
-  const [clubRow, setClubRow] = useState<UserManagementRow | null>(null);
+  const [positionRow, setPositionRow] = useState<UserManagementRow | null>(null);
   const [statusRow, setStatusRow] = useState<UserManagementRow | null>(null);
   const [invitationRow, setInvitationRow] = useState<UserManagementRow | null>(null);
 
@@ -73,13 +79,10 @@ export function UsersManagement({ initialRows, initialCursor }: UsersManagementP
     {
       id: "role",
       name: "Role",
-      render: (_value, row) => roleLabels[row.role],
-    },
-    {
-      id: "clubName",
-      name: "Club",
       render: (_value, row) =>
-        row.clubName ? <ClubLabel name={row.clubName} shortName={row.clubShortName} /> : "—",
+        row.role === Role.OFFICER && row.officerPosition
+          ? `${roleLabels[row.role]} · ${officerPositionLabels[row.officerPosition]}`
+          : roleLabels[row.role],
     },
     {
       id: "isActive",
@@ -96,81 +99,99 @@ export function UsersManagement({ initialRows, initialCursor }: UsersManagementP
     {
       id: "id",
       name: "Actions",
-      render: (_value, row) => (
-        <div className={styles.actions}>
-          {row.kind === "pending" ? (
-            <Button variant="ghost" onPress={() => setInvitationRow(row)}>
-              Cancel invitation
-            </Button>
-          ) : (
-            <>
-              <TooltipTrigger>
-                <Button
-                  variant="ghost"
-                  aria-label="Edit role"
-                  isDisabled={row.role === Role.DEV}
-                  onPress={() => setRoleRow(row)}
-                >
-                  <FaPencil aria-hidden="true" className={styles.actionIcon} />
-                </Button>
-                <Tooltip>
-                  {row.role === Role.DEV ? "Developer role cannot be edited" : "Edit role"}
-                </Tooltip>
-              </TooltipTrigger>
-              <TooltipTrigger>
-                <Button variant="ghost" aria-label="Assign club" onPress={() => setClubRow(row)}>
-                  <FaPeopleGroup aria-hidden="true" className={styles.actionIcon} />
-                </Button>
-                <Tooltip>Assign club</Tooltip>
-              </TooltipTrigger>
-              <TooltipTrigger>
-                <Button
-                  variant="ghost"
-                  aria-label={row.isActive ? "Deactivate user" : "Reactivate user"}
-                  onPress={() => setStatusRow(row)}
-                >
-                  {row.isActive ? (
-                    <FaBan aria-hidden="true" className={styles.actionIcon} />
-                  ) : (
-                    <FaUserCheck aria-hidden="true" className={styles.actionIcon} />
-                  )}
-                </Button>
-                <Tooltip>{row.isActive ? "Deactivate" : "Reactivate"}</Tooltip>
-              </TooltipTrigger>
-            </>
-          )}
-        </div>
-      ),
+      render: (_value, row) => {
+        const isSelf = row.kind === "user" && row.id === currentUserId;
+        return (
+          <div className={styles.actions}>
+            {row.kind === "pending" ? (
+              <Button variant="ghost" onPress={() => setInvitationRow(row)}>
+                Cancel invitation
+              </Button>
+            ) : (
+              <>
+                <TooltipTrigger>
+                  <Button
+                    variant="ghost"
+                    aria-label="Edit role"
+                    isDisabled={row.role === Role.DEV || isSelf}
+                    onPress={() => setRoleRow(row)}
+                  >
+                    <FaPencil aria-hidden="true" className={styles.actionIcon} />
+                  </Button>
+                  <Tooltip>
+                    {row.role === Role.DEV
+                      ? "Developer role cannot be edited"
+                      : isSelf
+                        ? "You cannot change your own role"
+                        : "Edit role"}
+                  </Tooltip>
+                </TooltipTrigger>
+                {row.role === Role.OFFICER && row.isActive && (
+                  <TooltipTrigger>
+                    <Button
+                      variant="ghost"
+                      aria-label={row.officerPosition ? "Change position" : "Set position"}
+                      onPress={() => setPositionRow(row)}
+                    >
+                      <FaCrown aria-hidden="true" className={styles.actionIcon} />
+                    </Button>
+                    <Tooltip>{row.officerPosition ? "Change position" : "Set position"}</Tooltip>
+                  </TooltipTrigger>
+                )}
+                <TooltipTrigger>
+                  <Button
+                    variant="ghost"
+                    aria-label={row.isActive ? "Deactivate user" : "Reactivate user"}
+                    onPress={() => setStatusRow(row)}
+                  >
+                    {row.isActive ? (
+                      <FaBan aria-hidden="true" className={styles.actionIcon} />
+                    ) : (
+                      <FaUserCheck aria-hidden="true" className={styles.actionIcon} />
+                    )}
+                  </Button>
+                  <Tooltip>{row.isActive ? "Deactivate" : "Reactivate"}</Tooltip>
+                </TooltipTrigger>
+              </>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
   return (
     <div className={styles.page}>
+      {!presidentName && (
+        <p className={styles.presidentNotice}>
+          No President appointed. Use the crown action on an Officer to appoint one.
+        </p>
+      )}
       <ServerDataTable
         fetchAction={getUserManagementPageAction}
         columns={columns}
         initialRows={initialRows}
         initialCursor={initialCursor}
-        searchPlaceholder="Search users..."
-        searchLabel="Search users"
+        searchPlaceholder="Search people..."
+        searchLabel="Search people"
         filters={userFilters}
         selectionMode="none"
         renderAddButton
         addButtonLabel="Add user"
         onAddButtonPress={() => setAddOpen(true)}
         refreshTrigger={refreshTrigger}
-        emptyContent="No users yet"
+        emptyContent="No people yet"
       />
       <AddUserModal isOpen={addOpen} onOpenChange={setAddOpen} onSuccess={refresh} />
-      {clubRow && clubRow.kind === "user" && (
-        <AssignClubModal
-          key={clubRow.id}
-          userId={clubRow.id}
-          userLabel={clubRow.name ?? clubRow.email}
-          initialClubId={clubRow.clubId}
+      {positionRow && positionRow.kind === "user" && (
+        <SetPositionModal
+          key={positionRow.id}
+          userId={positionRow.id}
+          userLabel={positionRow.name ?? positionRow.email}
+          initialPosition={positionRow.officerPosition}
           isOpen
           onOpenChange={(open) => {
-            if (!open) setClubRow(null);
+            if (!open) setPositionRow(null);
           }}
           onSuccess={refresh}
         />
@@ -184,13 +205,7 @@ export function UsersManagement({ initialRows, initialCursor }: UsersManagementP
           onOpenChange={(open) => {
             if (!open) setRoleRow(null);
           }}
-          onSuccess={(selfDemoted) => {
-            if (selfDemoted) {
-              router.replace("/access-changed");
-              return;
-            }
-            refresh();
-          }}
+          onSuccess={refresh}
         />
       )}
       <ConfirmDialog

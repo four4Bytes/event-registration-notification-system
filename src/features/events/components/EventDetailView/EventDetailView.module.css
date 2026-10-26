@@ -80,18 +80,6 @@
         align-items: center;
         gap: var(--space-sm);
       }
-
-      .hostTag {
-        display: inline-flex;
-        align-items: center;
-        padding: 2px var(--space-sm);
-        font-size: var(--font-size-xs);
-        font-weight: var(--font-weight-semi-bold);
-        color: var(--color-event-status-registered-text);
-        background-color: var(--color-event-soft);
-        border-radius: var(--radius-pill);
-        white-space: nowrap;
-      }
     }
 
     .about {

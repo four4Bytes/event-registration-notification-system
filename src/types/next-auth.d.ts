@@ -10,7 +10,6 @@ declare module "next-auth" {
       id: string;
       role: Role;
       isActive: boolean;
-      clubId: string | null;
       officerPosition: OfficerPosition | null;
     } & DefaultSession["user"];
   }
@@ -19,7 +18,6 @@ declare module "next-auth" {
   interface User extends DefaultUser {
     role?: Role;
     isActive?: boolean;
-    clubId?: string | null;
     officerPosition?: OfficerPosition | null;
   }
 }
@@ -30,7 +28,6 @@ declare module "next-auth/jwt" {
     id?: string;
     role?: Role;
     isActive?: boolean;
-    clubId?: string | null;
     officerPosition?: OfficerPosition | null;
   }
 }

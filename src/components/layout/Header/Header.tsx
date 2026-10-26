@@ -36,8 +36,7 @@ export function Header({ userImage, userName, userRole }: HeaderProps) {
     if (path.startsWith("/notifications")) return "Notifications";
     if (path === "/events") return "Events";
     if (path.startsWith("/events/")) return "Event detail";
-    if (path.startsWith("/admin/users")) return "Manage Users";
-    if (path.startsWith("/admin/clubs")) return "Manage Clubs";
+    if (path.startsWith("/admin/people")) return "People";
     return "";
   };
 

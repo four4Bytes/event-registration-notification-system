@@ -25,7 +25,6 @@ vi.mock("./mutations", () => ({
 
 vi.mock("./queries", () => ({
   getNotificationPage: vi.fn(),
-  getNotificationRecipients: vi.fn(),
   getUnreadNotificationCount: vi.fn(),
 }));
 
@@ -35,14 +34,14 @@ beforeEach(() => {
 });
 
 describe("markAllNotificationsReadAction", () => {
-  it("marks notifications for a student within their club scope", async () => {
+  it("marks every campus-wide notification for the signed-in user", async () => {
     guards.requirePermission.mockResolvedValue({
       id: "student-1",
       email: "student@example.com",
       name: "Student",
       role: Role.STUDENT,
       isActive: true,
-      clubId: "club-1",
+      officerPosition: null,
     });
     mutations.markAllNotificationsRead.mockResolvedValue(undefined);
 
@@ -51,8 +50,6 @@ describe("markAllNotificationsReadAction", () => {
     expect(guards.requirePermission).toHaveBeenCalledWith("notification.read");
     expect(mutations.markAllNotificationsRead).toHaveBeenCalledWith({
       userId: "student-1",
-      clubId: "club-1",
-      viewAll: false,
     });
   });
 });

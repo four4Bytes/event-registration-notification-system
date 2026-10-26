@@ -44,6 +44,7 @@ model User {
   role                   Role                    @default(STUDENT)
   officerPosition        OfficerPosition?
   isActive               Boolean                 @default(true)
+  /// Legacy club membership. Read-only after the single-organization migration.
   clubId                 String?
   club                   Club?                   @relation(fields: [clubId], references: [id])
   createdAt              DateTime                @default(now())
@@ -64,6 +65,7 @@ model PendingRoleAssignment {
   role               Role
   officerPosition    OfficerPosition?
   allowExternalEmail Boolean          @default(false)
+  /// Legacy club assignment. New invitations leave this null.
   clubId             String?
   club               Club?            @relation(fields: [clubId], references: [id])
   assignedById       String
@@ -80,7 +82,6 @@ model Club {
   events             Event[]
   notifications      Notification[]
   pendingAssignments PendingRoleAssignment[]
-  tasks              Task[]
 }
 
 model Event {
@@ -90,6 +91,7 @@ model Event {
   venue         String
   startAt       DateTime
   endAt         DateTime?
+  /// Legacy club host. New events leave this null.
   clubId        String?
   club          Club?          @relation(fields: [clubId], references: [id])
   createdById   String
@@ -114,8 +116,6 @@ model Attendance {
 
 model Task {
   id           String     @id @default(cuid())
-  clubId       String
-  club         Club       @relation(fields: [clubId], references: [id])
   eventId      String?
   event        Event?     @relation(fields: [eventId], references: [id])
   type         TaskType
@@ -128,9 +128,9 @@ model Task {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  @@index([clubId, status])
   @@index([assigneeId, status])
   @@index([eventId, type])
+  @@index([assignedById])
 }
 
 model Notification {
@@ -140,6 +140,7 @@ model Notification {
   audience    NotificationAudience
   eventId     String?
   event       Event?               @relation(fields: [eventId], references: [id])
+  /// Legacy club audience. New notifications write null.
   clubId      String?
   club        Club?                @relation(fields: [clubId], references: [id])
   createdById String

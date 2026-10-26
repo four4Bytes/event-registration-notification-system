@@ -29,7 +29,7 @@ interface EventTicketProps {
 
 const checkInSteps = [
   { title: "Arrive at the venue", text: "Keep this ticket open on your phone." },
-  { title: "Show your QR code", text: "An officer of the organizing club scans it." },
+  { title: "Show your QR code", text: "A KASAMA officer scans it." },
   { title: "You are marked present", text: "Your attendance appears in My Attendance right away." },
 ];
 

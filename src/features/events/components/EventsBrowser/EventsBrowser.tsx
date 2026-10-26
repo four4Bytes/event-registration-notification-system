@@ -17,34 +17,21 @@ interface EventsBrowserProps {
 export function EventsBrowser({ initialStatus = "all" }: EventsBrowserProps) {
   const events = useEvents();
   const [search, setSearch] = useState("");
-  const [host, setHost] = useState<EventFilter["host"]>("all");
   const [time, setTime] = useState<EventFilter["time"]>("upcoming");
   const [status, setStatus] = useState<EventFilter["status"]>(initialStatus);
 
-  const filteredEvents = filterEvents(events, { search, host, time, status });
+  const filteredEvents = filterEvents(events, { search, time, status });
 
   return (
     <div className={styles.page}>
       <div className={styles.toolbar}>
         <SearchField
           aria-label="Search events"
-          placeholder="Search events by title or club"
+          placeholder="Search events by title or organizer"
           value={search}
           onChange={setSearch}
           className={styles.searchField}
         />
-        <Select
-          aria-label="Filter by event host"
-          value={host}
-          onChange={(key) => {
-            if (key === "all" || key === "organization" || key === "club") setHost(key);
-          }}
-          className={styles.select}
-        >
-          <SelectItem id="all">All events</SelectItem>
-          <SelectItem id="organization">Organization-wide</SelectItem>
-          <SelectItem id="club">Club events</SelectItem>
-        </Select>
         <Select
           aria-label="Filter by date"
           value={time}

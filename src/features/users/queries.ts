@@ -17,9 +17,6 @@ export interface UserManagementRow {
   role: Role;
   officerPosition: OfficerPosition | null;
   isActive: boolean | null;
-  clubId: string | null;
-  clubName: string | null;
-  clubShortName: string | null;
   createdAt: Date;
 }
 
@@ -113,8 +110,6 @@ export async function getUserManagementPage(
             officerPosition: true,
             isActive: true,
             createdAt: true,
-            clubId: true,
-            club: { select: { name: true, shortName: true } },
           },
         })
       : [],
@@ -133,8 +128,6 @@ export async function getUserManagementPage(
             role: true,
             officerPosition: true,
             assignedAt: true,
-            clubId: true,
-            club: { select: { name: true, shortName: true } },
           },
         })
       : [],
@@ -149,9 +142,6 @@ export async function getUserManagementPage(
       role: user.role,
       officerPosition: user.officerPosition,
       isActive: user.isActive,
-      clubId: user.clubId,
-      clubName: user.club?.name ?? null,
-      clubShortName: user.club?.shortName ?? null,
       createdAt: user.createdAt,
     })),
     ...pending.map((assignment) => ({
@@ -162,9 +152,6 @@ export async function getUserManagementPage(
       role: assignment.role,
       officerPosition: assignment.officerPosition,
       isActive: null,
-      clubId: assignment.clubId,
-      clubName: assignment.club?.name ?? null,
-      clubShortName: assignment.club?.shortName ?? null,
       createdAt: assignment.assignedAt,
     })),
   ].sort(compareRowsDescending);
@@ -185,7 +172,6 @@ export interface UserAuthorization {
   role: Role;
   officerPosition: OfficerPosition | null;
   isActive: boolean | null;
-  clubId: string | null;
 }
 
 export async function getUserById(userId: string): Promise<UserAuthorization | null> {
@@ -196,31 +182,32 @@ export async function getUserById(userId: string): Promise<UserAuthorization | n
       role: true,
       officerPosition: true,
       isActive: true,
-      clubId: true,
     },
   });
 }
 
-export interface ClubOfficerOption {
+export interface PresidentSummary {
   id: string;
   name: string;
   email: string;
-  officerPosition: OfficerPosition | null;
 }
 
-export async function getClubOfficers(clubId: string): Promise<ClubOfficerOption[]> {
-  return prisma.user.findMany({
-    where: { clubId, role: Role.OFFICER, isActive: true },
-    orderBy: [{ officerPosition: { sort: "desc", nulls: "last" } }, { name: "asc" }],
-    select: { id: true, name: true, email: true, officerPosition: true },
+export async function getPresident(): Promise<PresidentSummary | null> {
+  return prisma.user.findFirst({
+    where: {
+      role: Role.OFFICER,
+      officerPosition: OfficerPosition.PRESIDENT,
+      isActive: true,
+    },
+    select: { id: true, name: true, email: true },
   });
 }
 
-export async function countActivePrivilegedUsers(excludeUserId?: string): Promise<number> {
+export async function countActiveAdmins(excludeUserId?: string): Promise<number> {
   return prisma.user.count({
     where: {
       isActive: true,
-      role: { in: [Role.ADMIN, Role.DEV] },
+      role: Role.ADMIN,
       ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
     },
   });

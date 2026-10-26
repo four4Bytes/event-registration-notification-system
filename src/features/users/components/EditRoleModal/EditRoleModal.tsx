@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button/Button";
 import { Modal } from "@/components/ui/Modal/Modal";
 import { Select, SelectItem } from "@/components/ui/Select/Select";
 import { updateUserRoleAction } from "@/features/users/actions";
+import { roleLabels } from "@/features/users/constants";
 import { UpdateUserRoleSchema, type UpdateUserRolePayload } from "@/features/users/schemas";
 import { Role } from "@/generated/prisma/browser";
 import { useModalForm } from "@/lib/hooks/useModalForm";
@@ -23,7 +24,7 @@ interface EditRoleModalProps {
   initialRole: AssignableRole;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSuccess?: (selfDemoted: boolean) => void;
+  onSuccess?: () => void;
 }
 
 export function EditRoleModal({
@@ -36,13 +37,10 @@ export function EditRoleModal({
 }: EditRoleModalProps) {
   const [role, setRole] = useState<AssignableRole>(initialRole);
 
-  const { isPending, submitForm, handleCancel } = useModalForm<
-    UpdateUserRolePayload,
-    { selfDemoted: boolean }
-  >({
+  const { isPending, submitForm, handleCancel } = useModalForm<UpdateUserRolePayload>({
     submit: updateUserRoleAction,
     onOpenChange,
-    onSuccess: (data) => onSuccess?.(data?.selfDemoted ?? false),
+    onSuccess,
     successMessage: "Role updated",
     successDescription: "The user's role has been updated.",
     failureMessage: "Failed to update role",
@@ -76,7 +74,7 @@ export function EditRoleModal({
           >
             {roles.map((item) => (
               <SelectItem key={item} id={item}>
-                {item}
+                {roleLabels[item]}
               </SelectItem>
             ))}
           </Select>

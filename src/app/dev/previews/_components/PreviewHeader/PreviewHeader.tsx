@@ -11,8 +11,7 @@ import styles from "./PreviewHeader.module.css";
 const appName = "Event Registration Notification System";
 
 const pageTitles: Record<string, string> = {
-  "/dev/previews/clubs": "Manage Clubs",
-  "/dev/previews/users": "Manage Users",
+  "/dev/previews/users": "People",
   "/dev/previews/notifications": "Notifications",
 };
 

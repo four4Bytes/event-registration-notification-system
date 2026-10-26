@@ -120,12 +120,11 @@ export function EventDetailView({ eventId, displayEvent }: EventDetailViewProps)
         <article className={styles.mainCard}>
           <header className={styles.eventHeader}>
             <h1 className={styles.eventTitle}>{event.title}</h1>
-            <div className={styles.tags}>
-              <span className={styles.hostTag}>
-                {event.host === "organization" ? "Organization-wide" : "Club event"}
-              </span>
-              {mockEvent && <EventStatusPill status={mockEvent.status} />}
-            </div>
+            {mockEvent && (
+              <div className={styles.tags}>
+                <EventStatusPill status={mockEvent.status} />
+              </div>
+            )}
           </header>
 
           <section className={styles.about} aria-labelledby="about-event-heading">

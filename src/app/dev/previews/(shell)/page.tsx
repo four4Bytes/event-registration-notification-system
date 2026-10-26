@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function PreviewsIndexPage() {
-  redirect("/dev/previews/clubs");
+  redirect("/dev/previews/users");
 }

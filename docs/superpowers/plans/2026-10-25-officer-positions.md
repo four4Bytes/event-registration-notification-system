@@ -70,7 +70,7 @@ Files: `src/lib/infra/auth.ts`, `src/types/next-auth.d.ts`,
    - `ADMIN`/`DEV`: matrix grant only;
    - `OFFICER`: matrix grant + `positionAllows` + `clubId` match;
    - everyone else: deny.
-   Throw `ForbiddenError` on failure.
+     Throw `ForbiddenError` on failure.
 4. Add `requirePageClubPermission` mirroring `requirePagePermission` redirects.
 5. Test (mock `auth` and `prisma.user.findUnique`):
    - every role/position against each new permission;
@@ -126,7 +126,7 @@ tests.
    - payload aliases at the bottom.
 2. `queries.ts`:
    - `TaskRow { id, clubId, clubName, eventId, eventTitle, type, assigneeId,
-     assigneeName, assignedById, assignedByName, dueAt, status, createdAt }`;
+assigneeName, assignedById, assignedByName, dueAt, status, createdAt }`;
    - `getClubTaskPage({ clubId, query })` cursor page by `createdAt, id`;
    - `getAssignedTaskPage({ assigneeId, query })`;
    - `getActiveAttendanceTask(assigneeId)` → first

@@ -1,41 +1,25 @@
-import { NotificationAudience, type Role } from "@/generated/prisma/browser";
+import { NotificationAudience } from "@/generated/prisma/browser";
 import type { Prisma } from "@/generated/prisma/client";
-import { notificationVisibility } from "@/lib/security/rbac";
 
 export interface NotificationScope {
   userId: string;
-  clubId: string | null;
-  viewAll: boolean;
 }
 
 export interface NotificationScopeUser {
   id: string;
-  role: Role;
-  clubId: string | null;
 }
 
 export function buildNotificationScope(user: NotificationScopeUser): NotificationScope {
-  return {
-    userId: user.id,
-    clubId: user.clubId,
-    viewAll: notificationVisibility(user.role) === "global",
-  };
+  return { userId: user.id };
 }
 
 /**
- * Builds the Prisma audience filter for notifications visible to a scope.
+ * Builds the Prisma audience filter for campus-wide notifications.
  *
- * @param scope - The caller's notification scope.
- * @returns A where-input matching every notification the scope may see.
+ * Legacy club-scoped rows stay in the database but are hidden from every feed.
+ *
+ * @returns A where-input matching only campus-wide notifications.
  */
-export function buildNotificationAudienceFilter(
-  scope: NotificationScope,
-): Prisma.NotificationWhereInput {
-  if (scope.viewAll) return {};
-  return {
-    OR: [
-      { audience: NotificationAudience.ALL },
-      ...(scope.clubId ? [{ audience: NotificationAudience.CLUB, clubId: scope.clubId }] : []),
-    ],
-  };
+export function buildNotificationAudienceFilter(): Prisma.NotificationWhereInput {
+  return { audience: NotificationAudience.ALL };
 }

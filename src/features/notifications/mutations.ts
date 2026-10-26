@@ -1,4 +1,4 @@
-import type { Notification, NotificationAudience } from "@/generated/prisma/browser";
+import { NotificationAudience, type Notification } from "@/generated/prisma/browser";
 import { prisma } from "@/lib/infra/prisma";
 
 import { buildNotificationAudienceFilter, type NotificationScope } from "./scope";
@@ -6,15 +6,15 @@ import { buildNotificationAudienceFilter, type NotificationScope } from "./scope
 export interface NotificationCreatePayload {
   title: string;
   body: string;
-  audience: NotificationAudience;
-  clubId: string | null;
   createdById: string;
 }
 
 export async function createNotification(
   payload: NotificationCreatePayload,
 ): Promise<Notification> {
-  return prisma.notification.create({ data: payload });
+  return prisma.notification.create({
+    data: { ...payload, audience: NotificationAudience.ALL, clubId: null },
+  });
 }
 
 export async function markNotificationRead(notificationId: string, userId: string): Promise<void> {
@@ -28,7 +28,7 @@ export async function markNotificationRead(notificationId: string, userId: strin
 export async function markAllNotificationsRead(scope: NotificationScope): Promise<void> {
   const unread = await prisma.notification.findMany({
     where: {
-      ...buildNotificationAudienceFilter(scope),
+      ...buildNotificationAudienceFilter(),
       reads: { none: { userId: scope.userId } },
     },
     select: { id: true },

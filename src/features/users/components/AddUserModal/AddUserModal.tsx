@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Form } from "react-aria-components";
 
 import { Button } from "@/components/ui/Button/Button";
@@ -8,13 +8,10 @@ import { Checkbox } from "@/components/ui/Checkbox/Checkbox";
 import { Modal } from "@/components/ui/Modal/Modal";
 import { Select, SelectItem } from "@/components/ui/Select/Select";
 import { TextField } from "@/components/ui/TextField/TextField";
-import { getClubOptionsAction } from "@/features/clubs/actions";
-import { formatClubLabel, LITS_CLUB_NAME } from "@/features/clubs/constants";
-import type { ClubOption } from "@/features/clubs/queries";
 import { addPendingUserAction } from "@/features/users/actions";
+import { officerPositionLabels, roleLabels } from "@/features/users/constants";
 import { AddPendingUserSchema, type AddPendingUserPayload } from "@/features/users/schemas";
-import { Role } from "@/generated/prisma/browser";
-import { toastError } from "@/lib/hooks/toast-utils";
+import { OfficerPosition, Role } from "@/generated/prisma/browser";
 import { useModalForm } from "@/lib/hooks/useModalForm";
 import {
   isAllowedEmail,
@@ -28,7 +25,7 @@ import styles from "./AddUserModal.module.css";
 const roles = [Role.STUDENT, Role.OFFICER, Role.ADMIN];
 type AssignableRole = (typeof roles)[number];
 
-const NO_CLUB = "none";
+const NO_POSITION = "none";
 const validateEmailFormat = createFieldValidator(AddPendingUserSchema.shape.email);
 
 interface AddUserModalProps {
@@ -40,14 +37,13 @@ interface AddUserModalProps {
 export function AddUserModal({ isOpen, onOpenChange, onSuccess }: AddUserModalProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<AssignableRole>(Role.STUDENT);
-  const [clubId, setClubId] = useState<string | null>(null);
+  const [officerPosition, setOfficerPosition] = useState<OfficerPosition | null>(null);
   const [allowExternalEmail, setAllowExternalEmail] = useState(false);
-  const [clubs, setClubs] = useState<ClubOption[]>([]);
 
   const reset = () => {
     setEmail("");
     setRole(Role.STUDENT);
-    setClubId(null);
+    setOfficerPosition(null);
     setAllowExternalEmail(false);
   };
 
@@ -62,33 +58,6 @@ export function AddUserModal({ isOpen, onOpenChange, onSuccess }: AddUserModalPr
     schema: AddPendingUserSchema,
   });
 
-  useEffect(() => {
-    if (!isOpen) return;
-    let cancelled = false;
-    async function loadClubs() {
-      try {
-        const rows = await getClubOptionsAction();
-        if (cancelled) return;
-        setClubs(rows);
-        setClubId(
-          (current) => current ?? rows.find((club) => club.name === LITS_CLUB_NAME)?.id ?? null,
-        );
-      } catch {
-        if (!cancelled) {
-          toastError(
-            "Failed to load clubs",
-            "We couldn't retrieve the club list. Please try again.",
-          );
-          onOpenChange(false);
-        }
-      }
-    }
-    void loadClubs();
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen, onOpenChange]);
-
   function validateEmail(value: unknown): string | null {
     const formatError = validateEmailFormat(value);
     if (formatError) return formatError;
@@ -101,7 +70,12 @@ export function AddUserModal({ isOpen, onOpenChange, onSuccess }: AddUserModalPr
   async function handleSubmit(event: React.SyntheticEvent) {
     event.preventDefault();
     if (isPending) return;
-    await submitForm({ email: requiredString(email), role, clubId, allowExternalEmail });
+    await submitForm({
+      email: requiredString(email),
+      role,
+      officerPosition: role === Role.OFFICER ? officerPosition : null,
+      allowExternalEmail,
+    });
   }
 
   return (
@@ -133,32 +107,38 @@ export function AddUserModal({ isOpen, onOpenChange, onSuccess }: AddUserModalPr
             value={role}
             onChange={(value) => {
               const selectedRole = String(value) as AssignableRole;
-              if (roles.includes(selectedRole)) setRole(selectedRole);
+              if (!roles.includes(selectedRole)) return;
+              setRole(selectedRole);
+              if (selectedRole !== Role.OFFICER) setOfficerPosition(null);
             }}
             validate={createFieldValidator(AddPendingUserSchema.shape.role)}
             isDisabled={isPending}
           >
             {roles.map((item) => (
               <SelectItem key={item} id={item}>
-                {item}
+                {roleLabels[item]}
               </SelectItem>
             ))}
           </Select>
-          <Select
-            label="Club"
-            value={clubId ?? NO_CLUB}
-            onChange={(value) =>
-              setClubId(value == null || value === NO_CLUB ? null : String(value))
-            }
-            isDisabled={isPending}
-          >
-            <SelectItem id={NO_CLUB}>No club</SelectItem>
-            {clubs.map((club) => (
-              <SelectItem key={club.id} id={club.id}>
-                {formatClubLabel(club)}
+          {role === Role.OFFICER && (
+            <Select
+              label="Position"
+              value={officerPosition ?? NO_POSITION}
+              onChange={(value) =>
+                setOfficerPosition(
+                  value == null || value === NO_POSITION
+                    ? null
+                    : (String(value) as OfficerPosition),
+                )
+              }
+              isDisabled={isPending}
+            >
+              <SelectItem id={NO_POSITION}>No position</SelectItem>
+              <SelectItem id={OfficerPosition.PRESIDENT}>
+                {officerPositionLabels[OfficerPosition.PRESIDENT]}
               </SelectItem>
-            ))}
-          </Select>
+            </Select>
+          )}
           <div className={styles.actions}>
             <Button
               className={styles.button}

@@ -6,6 +6,12 @@
   max-width: 80rem;
   margin: 0 auto;
 
+  .presidentNotice {
+    margin: 0 0 var(--space-sm);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
   .actions {
     display: flex;
     flex-wrap: wrap;

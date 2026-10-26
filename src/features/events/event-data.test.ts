@@ -6,7 +6,6 @@ let data: typeof import("./event-data");
 
 const filter = (overrides: Partial<EventFilter> = {}): EventFilter => ({
   search: "",
-  host: "all",
   time: "all",
   status: "all",
   ...overrides,
@@ -87,10 +86,10 @@ describe("cancelRegistration", () => {
 });
 
 describe("filterEvents", () => {
-  it("filters by search, host, and upcoming", () => {
+  it("filters by search, date, and status", () => {
     const events = data.getEvents();
     expect(data.filterEvents(events, filter({ search: "science" }))).toHaveLength(1);
-    expect(data.filterEvents(events, filter({ host: "organization" }))).toHaveLength(2);
+    expect(data.filterEvents(events, filter({ search: "kasama" }))).toHaveLength(11);
     expect(data.filterEvents(events, filter({ time: "upcoming" }))).toHaveLength(11);
     expect(data.filterEvents(events, filter({ status: "open" }))).toHaveLength(6);
   });

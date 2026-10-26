@@ -11,7 +11,6 @@ export const OfficerPositionSchema = z.enum([OfficerPosition.PRESIDENT]);
 const officerPositionSchema = OfficerPositionSchema.nullable().default(null);
 
 const cuidSchema = z.string().regex(/^c[a-z0-9]{24}$/, "Invalid user identifier");
-const clubIdSchema = z.string().regex(/^c[a-z0-9]{24}$/, "Invalid club identifier");
 
 export const UserIdSchema = z.object({ userId: cuidSchema });
 
@@ -28,23 +27,15 @@ export const AddPendingUserSchema = z
   .object({
     email: emailText("Email"),
     role: AssignableRoleSchema,
-    clubId: clubIdSchema.nullable().default(null),
     officerPosition: officerPositionSchema,
     allowExternalEmail: z.boolean().default(false),
   })
-  .superRefine(({ email, allowExternalEmail, role, clubId, officerPosition }, context) => {
+  .superRefine(({ email, allowExternalEmail, role, officerPosition }, context) => {
     if (!isAllowedEmail(email, allowExternalEmail)) {
       context.addIssue({
         code: "custom",
         path: ["email"],
         message: SCHOOL_EMAIL_REQUIRED_MESSAGE,
-      });
-    }
-    if (role === Role.OFFICER && !clubId) {
-      context.addIssue({
-        code: "custom",
-        path: ["clubId"],
-        message: "Officers must belong to a club.",
       });
     }
     if (officerPosition && role !== Role.OFFICER) {
@@ -59,11 +50,6 @@ export const AddPendingUserSchema = z
 export const SetOfficerPositionSchema = z.object({
   userId: cuidSchema,
   officerPosition: officerPositionSchema,
-});
-
-export const SetUserClubSchema = z.object({
-  userId: cuidSchema,
-  clubId: clubIdSchema.nullable(),
 });
 
 export const UserRoleFilterSchema = z.enum([Role.STUDENT, Role.OFFICER, Role.ADMIN, Role.DEV]);
@@ -86,5 +72,4 @@ export type PendingRoleAssignmentIdPayload = z.input<typeof PendingRoleAssignmen
 export type SetUserActivePayload = z.input<typeof SetUserActiveSchema>;
 export type UpdateUserRolePayload = z.input<typeof UpdateUserRoleSchema>;
 export type AddPendingUserPayload = z.input<typeof AddPendingUserSchema>;
-export type SetUserClubPayload = z.input<typeof SetUserClubSchema>;
 export type SetOfficerPositionPayload = z.input<typeof SetOfficerPositionSchema>;

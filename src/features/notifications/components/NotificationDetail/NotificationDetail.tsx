@@ -25,7 +25,7 @@ export function NotificationDetail({ notification, onBack }: NotificationDetailP
       </Button>
 
       <div className={styles.meta}>
-        <span className={styles.club}>{notification.clubName ?? "Organization-wide"}</span>
+        <span className={styles.audience}>Campus-wide</span>
         <time className={styles.time} dateTime={notification.createdAt.toISOString()}>
           {formatDateTime(notification.createdAt)}
         </time>

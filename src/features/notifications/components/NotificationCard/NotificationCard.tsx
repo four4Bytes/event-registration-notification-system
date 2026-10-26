@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { FaUserGroup } from "react-icons/fa6";
+import { FaBullhorn } from "react-icons/fa6";
 
 import { timeAgo } from "@/lib/primitives/date";
 
@@ -37,8 +37,8 @@ export function NotificationCard({ notification, isSelected, onSelect }: Notific
         <span className={styles.body}>{notification.body}</span>
         <span className={styles.tags}>
           <span className={styles.chip}>
-            <FaUserGroup aria-hidden="true" />
-            {notification.clubShortName ?? notification.clubName ?? "Organization-wide"}
+            <FaBullhorn aria-hidden="true" />
+            Campus-wide
           </span>
         </span>
       </span>

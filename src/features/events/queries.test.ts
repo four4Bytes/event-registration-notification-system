@@ -24,7 +24,6 @@ const eventRow = {
   venue: "Main Gymnasium",
   startAt,
   endAt,
-  club: { name: "LITS" },
   createdBy: { name: "Liza Mercado" },
 };
 
@@ -35,8 +34,7 @@ const expectedEvent = {
   venue: "Main Gymnasium",
   startAt,
   endAt,
-  clubName: "LITS",
-  organizer: "LITS",
+  organizer: "Liza Mercado",
 };
 
 beforeEach(() => {
@@ -44,20 +42,10 @@ beforeEach(() => {
 });
 
 describe("getEventById", () => {
-  it("returns the event with its club as the organizer", async () => {
+  it("returns the event with its creator as the organizer", async () => {
     prismaMocks.findUnique.mockResolvedValue(eventRow);
 
     await expect(getEventById("event-1")).resolves.toEqual(expectedEvent);
-  });
-
-  it("falls back to the creator for an organization-wide event", async () => {
-    prismaMocks.findUnique.mockResolvedValue({ ...eventRow, club: null });
-
-    await expect(getEventById("event-2")).resolves.toEqual({
-      ...expectedEvent,
-      clubName: null,
-      organizer: "Liza Mercado",
-    });
   });
 
   it("returns null when the event does not exist", async () => {

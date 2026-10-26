@@ -7,7 +7,6 @@ import { useState } from "react";
 import {
   FaBars,
   FaBell,
-  FaBuilding,
   FaCalendarDays,
   FaClipboardCheck,
   FaHouse,
@@ -41,8 +40,7 @@ const navItems: NavItem[] = [
   { label: "My Registrations", href: "/registrations", icon: FaTicket },
   { label: "My Attendance", href: "/attendance", icon: FaClipboardCheck },
   { label: "Notifications", href: "/notifications", icon: FaBell },
-  { label: "Manage Users", href: "/admin/users", icon: FaUsers, permission: "user.read" },
-  { label: "Manage Clubs", href: "/admin/clubs", icon: FaBuilding, permission: "club.read" },
+  { label: "People", href: "/admin/people", icon: FaUsers, permission: "user.read" },
 ];
 
 interface SidebarProps {

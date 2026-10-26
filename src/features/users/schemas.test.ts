@@ -4,7 +4,6 @@ import { AddPendingUserSchema } from "./schemas";
 
 const basePayload = {
   role: "STUDENT",
-  clubId: null,
 } as const;
 
 describe("AddPendingUserSchema", () => {
@@ -52,17 +51,14 @@ describe("AddPendingUserSchema", () => {
     expect(result.error.issues[0]?.path).toEqual(["email"]);
   });
 
-  it("requires a club for an officer", () => {
+  it("accepts an officer without a club", () => {
     const result = AddPendingUserSchema.safeParse({
       ...basePayload,
       email: "officer@acdeducation.com",
       role: "OFFICER",
-      clubId: null,
     });
 
-    expect(result.success).toBe(false);
-    if (result.success) return;
-    expect(result.error.issues.map((issue) => issue.path)).toContainEqual(["clubId"]);
+    expect(result.success).toBe(true);
   });
 
   it("rejects a position on a non-officer", () => {
@@ -77,12 +73,11 @@ describe("AddPendingUserSchema", () => {
     expect(result.error.issues.map((issue) => issue.path)).toContainEqual(["officerPosition"]);
   });
 
-  it("accepts an officer with a club and a position", () => {
+  it("accepts an officer with a position", () => {
     const result = AddPendingUserSchema.safeParse({
       ...basePayload,
       email: "officer@acdeducation.com",
       role: "OFFICER",
-      clubId: "cmvib2o6p0000s47kgof7v4ja",
       officerPosition: "PRESIDENT",
     });
 

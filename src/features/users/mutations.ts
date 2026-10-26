@@ -7,7 +7,6 @@ export interface PendingRoleAssignmentPayload {
   officerPosition: OfficerPosition | null;
   allowExternalEmail: boolean;
   assignedById: string;
-  clubId: string | null;
 }
 
 export interface OfficerPositionPayload {
@@ -37,22 +36,16 @@ export async function updateUserRole(userId: string, role: Role): Promise<void> 
 }
 
 export async function setUserActive(userId: string, isActive: boolean): Promise<void> {
-  await prisma.user.update({ where: { id: userId }, data: { isActive } });
-}
-
-export async function setUserClub(userId: string, clubId: string | null): Promise<void> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { clubId: true } });
-  const clubChanged = user?.clubId !== clubId;
   await prisma.user.update({
     where: { id: userId },
-    data: { clubId, ...(clubChanged ? { officerPosition: null } : {}) },
+    data: { isActive, ...(isActive ? {} : { officerPosition: null }) },
   });
 }
 
 export async function upsertPendingRoleAssignment(
   payload: PendingRoleAssignmentPayload,
 ): Promise<void> {
-  const { email, role, allowExternalEmail, assignedById, clubId } = payload;
+  const { email, role, allowExternalEmail, assignedById } = payload;
   const officerPosition = role === Role.OFFICER ? payload.officerPosition : null;
   await prisma.pendingRoleAssignment.upsert({
     where: { email },
@@ -61,10 +54,9 @@ export async function upsertPendingRoleAssignment(
       officerPosition,
       allowExternalEmail,
       assignedById,
-      clubId,
       assignedAt: new Date(),
     },
-    create: { email, role, officerPosition, allowExternalEmail, assignedById, clubId },
+    create: { email, role, officerPosition, allowExternalEmail, assignedById },
   });
 }
 
@@ -77,14 +69,14 @@ export async function setOfficerPosition(payload: OfficerPositionPayload): Promi
   await prisma.$transaction(async (tx) => {
     const target = await tx.user.findUnique({
       where: { id: userId },
-      select: { clubId: true },
+      select: { role: true },
     });
-    if (!target?.clubId) throw new Error("Officer has no club");
+    if (!target) throw new Error("User not found");
+    if (target.role !== Role.OFFICER) throw new Error("Only officers can hold a position");
 
     if (officerPosition === OfficerPosition.PRESIDENT) {
       await tx.user.updateMany({
         where: {
-          clubId: target.clubId,
           officerPosition: OfficerPosition.PRESIDENT,
           id: { not: userId },
         },

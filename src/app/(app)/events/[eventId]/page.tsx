@@ -22,7 +22,6 @@ export default async function EventDetailPage({ params }: EventDetailPageProps) 
     venue: dbEvent.venue,
     startAt: dbEvent.startAt.toISOString(),
     endAt: (dbEvent.endAt ?? dbEvent.startAt).toISOString(),
-    host: dbEvent.clubName ? "club" : "organization",
   };
 
   // shortcut: seat data is shared by title until events store capacity/registration in the DB.

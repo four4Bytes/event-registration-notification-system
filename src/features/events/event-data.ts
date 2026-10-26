@@ -107,10 +107,9 @@ export function filterEvents(
         search.length === 0 ||
         event.title.toLowerCase().includes(search) ||
         event.organizer.toLowerCase().includes(search);
-      const matchesHost = filter.host === "all" || event.host === filter.host;
       const matchesTime = filter.time === "all" || new Date(event.startAt).getTime() >= nowTime;
       const matchesStatus = filter.status === "all" || event.status === "open";
-      return matchesSearch && matchesHost && matchesTime && matchesStatus;
+      return matchesSearch && matchesTime && matchesStatus;
     })
     .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 }

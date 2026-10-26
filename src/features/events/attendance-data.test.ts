@@ -11,7 +11,7 @@ import {
 const baseRecord: AttendanceRecord = {
   id: "record",
   eventTitle: "Event",
-  organizer: "Club",
+  organizer: "KASAMA",
   checkedInAt: "2026-10-02T15:05:00+08:00",
   walkIn: false,
 };
@@ -34,7 +34,7 @@ describe("filterAttendanceRecords", () => {
 
   it.each([
     ["debate", "debate-semifinals"],
-    ["science", "chemistry-demonstration"],
+    ["chemistry", "chemistry-demonstration"],
     ["  robotics  ", "robotics-expo"],
   ])("matches event titles and organizers for %s", (query, id) => {
     expect(filterAttendanceRecords(attendanceRecords, query).map((record) => record.id)).toEqual([
