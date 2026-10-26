@@ -53,7 +53,11 @@ export type Permission =
   | "club.update"
   | "club.delete"
   | "notification.read"
-  | "notification.create";
+  | "notification.create"
+  | "event.read"
+  | "event.create"
+  | "event.update"
+  | "event.delete";
 
 /**
  * Qualifier set for one matrix row, keyed by the standard application roles.
@@ -97,6 +101,11 @@ export const PERMISSION_MATRIX: Record<Permission, Record<Role, AccessLevel>> = 
 
   "notification.read": cells({ admin: "yes", officer: "own_club", student: "own_club" }),
   "notification.create": cells({ admin: "yes", officer: "yes", student: "no" }),
+
+  "event.read": cells({ admin: "yes", officer: "own_club", student: "own_club" }),
+  "event.create": cells({ admin: "yes", officer: "yes", student: "no" }),
+  "event.update": cells({ admin: "yes", officer: "own_club", student: "no" }),
+  "event.delete": cells({ admin: "yes", officer: "no", student: "no" }),
 };
 
 /**
@@ -118,6 +127,28 @@ export type NotificationVisibility = "global" | "own_club";
  */
 export function notificationVisibility(role: Role | null | undefined): NotificationVisibility {
   if (role && PERMISSION_MATRIX["notification.read"][role] === "yes") return "global";
+  return "own_club";
+}
+
+/**
+ * Row scope resolved from the `event.read` access level.
+ *
+ * `"global"` reads every event regardless of club or status; `"own_club"`
+ * reads organisation-wide events plus approved events belonging to the
+ * reader's own club.
+ */
+export type EventVisibility = "global" | "own_club";
+
+/**
+ * Resolves the event read scope for a role from the access level of the
+ * `event.read` row, failing closed to the most restrictive scope for
+ * `null`/`undefined` or unrecognized roles.
+ *
+ * @param role - The user's role (nullable, as it comes from the session).
+ * @returns The role's event row scope.
+ */
+export function eventVisibility(role: Role | null | undefined): EventVisibility {
+  if (role && PERMISSION_MATRIX["event.read"][role] === "yes") return "global";
   return "own_club";
 }
 

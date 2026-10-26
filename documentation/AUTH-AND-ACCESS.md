@@ -6,8 +6,10 @@ The application does not store passwords. Every sign-in goes through Google. Sch
 `@acdeducation.com` and `@acd.edu.ph` domains. New external Google accounts are accepted only when an administrator has
 invited the address and approved external access.
 
-The sign-in page is public and offers one action: **Continue with Google**. After the OAuth round trip, the application
-decides whether the person may enter and, for a first-time user, what role and club they receive.
+The sign-in page is public and offers **Continue with Google** when no session exists. When a session already exists, it
+offers **Sign out** instead so a second Google account cannot be linked to the current user by accident. After the OAuth
+round trip, the application decides whether the person may enter and, for a first-time user, what role and club they
+receive.
 
 ## How sign-in is decided
 
@@ -127,6 +129,10 @@ The Google provider allows an existing local account to be linked when the verif
 with an "account not linked" error. The sign-in callback also requires a verified email. In practice, the local account
 is only as trustworthy as the verified Google address behind it, so this is worth remembering when changing the auth
 configuration.
+
+Signing in with a second Google account while a session is active does **not** switch users: the OAuth account is linked
+to the currently signed-in local user. To switch accounts, sign out first and then sign in with the other Google account.
+The sign-in page enforces this by replacing the Google action with a sign-out action whenever a session exists.
 
 ## Current gaps
 

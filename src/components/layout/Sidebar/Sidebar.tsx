@@ -4,7 +4,16 @@ import clsx from "clsx";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { FaBars, FaBell, FaBuilding, FaUser, FaUsers, FaX } from "react-icons/fa6";
+import {
+  FaBars,
+  FaBell,
+  FaBuilding,
+  FaCalendarDays,
+  FaQrcode,
+  FaUser,
+  FaUsers,
+  FaX,
+} from "react-icons/fa6";
 
 import { Button } from "@/components/ui/Button/Button";
 import { useNavigationProgress } from "@/components/ui/TopProgressBar/navigation-context";
@@ -26,6 +35,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: "Notifications", href: "/notifications", icon: FaBell },
+  { label: "Events", href: "/events", icon: FaCalendarDays, permission: "event.read" },
+  { label: "Scan QR", href: "/scan", icon: FaQrcode, permission: "event.read" },
   { label: "Manage Users", href: "/admin/users", icon: FaUsers, permission: "user.read" },
   { label: "Manage Clubs", href: "/admin/clubs", icon: FaBuilding, permission: "club.read" },
 ];

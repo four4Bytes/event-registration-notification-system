@@ -52,13 +52,15 @@ async function findClubConflict(name: string, shortName: string | null, excludeC
 }
 
 /**
- * Lists clubs as picker options for the notification composer and user forms.
+ * Lists clubs as picker options for the notification composer, event form, and
+ * user forms.
  *
  * @returns Every club as an `{ id, name, shortName }` option, sorted by name.
- * @throws {ForbiddenError} When the caller holds neither `notification.create` nor `user.update`.
+ * @throws {ForbiddenError} When the caller holds none of `notification.create`,
+ * `user.update`, or `event.create`.
  */
 export async function getClubOptionsAction(): Promise<ClubOption[]> {
-  await requirePermission("notification.create", "user.update");
+  await requirePermission("notification.create", "user.update", "event.create");
   return getClubOptions();
 }
 

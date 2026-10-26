@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import { randomBytes } from "node:crypto";
+
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { LITS_CLUB_NAME, LITS_CLUB_SHORT_NAME } from "../src/features/clubs/constants";
@@ -213,7 +215,9 @@ async function seedEvents(
     const existing = await prisma.event.findFirst({ where: { title: event.title } });
     const row = existing
       ? await prisma.event.update({ where: { id: existing.id }, data })
-      : await prisma.event.create({ data });
+      : await prisma.event.create({
+          data: { ...data, publicToken: randomBytes(16).toString("hex") },
+        });
     byTitle.set(event.title, row);
     console.log(`Seeded event: ${event.title}`);
   }

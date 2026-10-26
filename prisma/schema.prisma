@@ -19,6 +19,13 @@ enum NotificationAudience {
   CLUB
 }
 
+enum EventStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 model User {
   id                     String                  @id @default(cuid())
   email                  String                  @unique
@@ -70,13 +77,19 @@ model Event {
   venue         String
   startAt       DateTime
   endAt         DateTime?
+  facebookUrl   String?
+  status        EventStatus    @default(APPROVED)
+  publicToken   String         @unique
   clubId        String?
   club          Club?          @relation(fields: [clubId], references: [id])
   createdById   String
   createdBy     User           @relation("EventCreator", fields: [createdById], references: [id])
   createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   attendances   Attendance[]
   notifications Notification[]
+
+  @@index([status, startAt])
 }
 
 model Attendance {

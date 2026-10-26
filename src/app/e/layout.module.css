@@ -1,0 +1,12 @@
+.shell {
+  min-height: 100dvh;
+  padding: var(--space-2xl) var(--space-xl);
+  background: var(--color-app-bg);
+}
+
+/* Mobile overrides */
+@media (max-width: 48rem) {
+  .shell {
+    padding: var(--space-lg) var(--space-md);
+  }
+}

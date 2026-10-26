@@ -69,6 +69,20 @@ own club).
 | UPDATE |  YES  |   NO    |   NO    |
 | DELETE |  YES  |   NO    |   NO    |
 
+### Event
+
+> Officers create events for their own club; admins create and manage events for any club. Every role can read
+> organisation-wide events (`club = null`) plus approved events belonging to their own club in the list. An approved
+> event opened by its QR link is readable by any signed-in user, because posters are meant to be scanned across clubs.
+> Officers may only edit events their club owns, and only admins may delete events.
+
+| Action | Admin | Officer  | Student  |
+| :----- | :---: | :------: | :------: |
+| CREATE |  YES  |   YES    |    NO    |
+| READ   |  YES  | OWN_CLUB | OWN_CLUB |
+| UPDATE |  YES  | OWN_CLUB |    NO    |
+| DELETE |  YES  |    NO    |    NO    |
+
 ### Notification
 
 > Sending notifications is an Officer and Admin capability. Every role can read notifications; `OWN_CLUB` readers see
@@ -88,10 +102,10 @@ own club).
   `requirePermission(...)` from `src/lib/security/auth-guards.ts`. The guard accepts one or more permissions and
   authorizes when the user holds **at least one**.
 
-- The club options read (`getClubOptionsAction`) is shared by the notification composer (Officers and up) and the
-  user-assignment flows (Admins), so it uses the variadic guard: `requirePermission("notification.create",
-"user.update")`. It is intentionally **not** gated by `club.read`, which stays management-only so Officers cannot reach
-  the Manage Clubs page.
+- The club options read (`getClubOptionsAction`) is shared by the notification composer (Officers and up), the event
+  form (Officers and up), and the user-assignment flows (Admins), so it uses the variadic guard:
+  `requirePermission("notification.create", "user.update", "event.create")`. It is intentionally **not** gated by
+  `club.read`, which stays management-only so Officers cannot reach the Manage Clubs page.
 
 - Client-side checks (e.g. sidebar visibility) are presentation-only and never a security boundary; the server re-checks
   every request.
