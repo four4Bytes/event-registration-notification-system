@@ -31,18 +31,18 @@ Branch note: rows 1-5 are on `fork/style/quiet-refresh` only and are not merged 
 
 ## Section C. Proof attachments
 
-| Log row | Attachment                                | Status              |
-| ------- | ----------------------------------------- | ------------------- |
-| 1       | `ai-evidence/07-ai-f1-student-events.png` | Captured 2026-10-24 |
-| 2       | `ai-evidence/07-ai-f2-notifications.png`  | Captured 2026-10-24 |
-| 3       | `ai-evidence/07-ai-f3-design-tokens.png`  | Captured 2026-10-24 |
-| 4       | `ai-evidence/07-ai-f4-ci.png`             | Captured 2026-10-24 |
-| 5       | `ai-evidence/07-ai-f5-docs.png`           | Captured 2026-10-24 |
-| 6       | `ai-evidence/07-ai-f6-events-plan.png`    | Captured 2026-10-24 |
-| 7       | `ai-evidence/07-ai-f7-docs-commit.png`    | Captured 2026-10-24 |
-| 8       | `ai-evidence/07-ai-f8-spec-tickets.png`   | Captured 2026-10-24 |
-| 9       | `ai-evidence/07-ai-f9-roles.png`          | Captured 2026-10-24 |
-| 10      | `ai-evidence/07-ai-f10-dev-signin.png`    | Captured 2026-10-24 |
+| Log row | Attachment                                                     | Status              |
+| ------- | -------------------------------------------------------------- | ------------------- |
+| 1       | `ai-evidence/Tanya-Mae-Fontanilla/07-ai-f1-student-events.png` | Captured 2026-10-24 |
+| 2       | `ai-evidence/Tanya-Mae-Fontanilla/07-ai-f2-notifications.png`  | Captured 2026-10-24 |
+| 3       | `ai-evidence/Tanya-Mae-Fontanilla/07-ai-f3-design-tokens.png`  | Captured 2026-10-24 |
+| 4       | `ai-evidence/Tanya-Mae-Fontanilla/07-ai-f4-ci.png`             | Captured 2026-10-24 |
+| 5       | `ai-evidence/Tanya-Mae-Fontanilla/07-ai-f5-docs.png`           | Captured 2026-10-24 |
+| 6       | `ai-evidence/Tanya-Mae-Fontanilla/07-ai-f6-events-plan.png`    | Captured 2026-10-24 |
+| 7       | `ai-evidence/Tanya-Mae-Fontanilla/07-ai-f7-docs-commit.png`    | Captured 2026-10-24 |
+| 8       | `ai-evidence/Tanya-Mae-Fontanilla/07-ai-f8-spec-tickets.png`   | Captured 2026-10-24 |
+| 9       | `ai-evidence/Tanya-Mae-Fontanilla/07-ai-f9-roles.png`          | Captured 2026-10-24 |
+| 10      | `ai-evidence/Tanya-Mae-Fontanilla/07-ai-f10-dev-signin.png`    | Captured 2026-10-24 |
 
 Rows 1-4 are captured from `ses_e9b6ca8aaffe0B9ZTQl3LsdYmR` ("Create PR for committed changes") and row 5 from
 `ses_e967084d2ffew37WnyVcu3mE1Y` ("Filling AI declaration form for ERNS"). Row 6 comes from
@@ -59,17 +59,20 @@ value already exists in committed code (25078a9)"), so that message is what the 
 The Week 7 officer attendance and database-backed registration work was produced in session
 `ses_e883954f0ffebkxutKDiK0nsrW` (OpenCode, DeepSeek V4.1 Flash) on 26-27 October 2026. The full record - requests,
 outputs, files, verification, decisions, and limitations - is in
-[`ai-evidence/final-wk7-session-record.md`](../ai-evidence/final-wk7-session-record.md).
+[`ai-evidence/Tanya-Mae-Fontanilla/final-wk7-session-record.md`](../ai-evidence/Tanya-Mae-Fontanilla/final-wk7-session-record.md).
 
 | Area                                                                       | Commit                                      | Evidence                                               |
 | -------------------------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------ |
 | Officer dashboard, QR scanner, manual entry, records, attendance migration | `54bcb76` (tag `final-wk7`)                 | `src/features/events/attendance.integration.test.ts`   |
 | Database-backed student registration and cancellation                      | `54bcb76` (tag `final-wk7`)                 | `src/features/events/registration.integration.test.ts` |
-| Verification                                                               | 442 unit, 7 integration, lint, types, build | Refer to the session record                            |
+| Verification                                                               | 435 unit, 7 integration, lint, types, build | Refer to the session record                            |
+
+Rows 11-19 of [`AI-DECLARATION-FONTANILLA.md`](./AI-DECLARATION-FONTANILLA.md) Section B record these sessions; the
+captures are indexed in [`ai-evidence/Tanya-Mae-Fontanilla/final-wk7-sessions.md`](../ai-evidence/Tanya-Mae-Fontanilla/final-wk7-sessions.md).
 
 The session reused the existing `KASAMA-...` registration reference as the QR payload and kept every authorization
 decision in the existing guards. No new evidence screenshots were captured for this session; the record, the tagged
 commit, and the tests above are the evidence trail.
 
-Capture: one PNG per OpenCode session created during the week - `ai-evidence/08-final-wk7-session-01.png` through
-`-09.png`, indexed in [`ai-evidence/final-wk7-sessions.md`](../ai-evidence/final-wk7-sessions.md).
+Capture: one PNG per OpenCode session created during the week - `ai-evidence/Tanya-Mae-Fontanilla/08-final-wk7-session-01.png` through
+`-09.png`, indexed in [`ai-evidence/Tanya-Mae-Fontanilla/final-wk7-sessions.md`](../ai-evidence/Tanya-Mae-Fontanilla/final-wk7-sessions.md).

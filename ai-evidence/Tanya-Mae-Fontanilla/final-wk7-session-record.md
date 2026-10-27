@@ -47,17 +47,17 @@ are summarised rather than quoted verbatim, and every claim below can be checked
 
 ## 4. Verification performed
 
-| Check                                                    | Result                                  |
-| -------------------------------------------------------- | --------------------------------------- |
-| `pnpm test` (unit)                                       | 442 passed, 26 files                    |
-| `pnpm test:integration` (real PostgreSQL)                | 7 passed, 3 files                       |
-| Duplicate check-in (two concurrent calls, real DB)       | Exactly one row; one `already_attended` |
-| Registration persistence (create → cancel → re-register) | One row; reference reused               |
-| `pnpm lint`                                              | Passed                                  |
-| `tsc --noEmit`                                           | Passed                                  |
-| `pnpm build`                                             | Passed; both new routes compiled        |
-| Runtime guard check (`/attendance/*` unauthenticated)    | 307 redirect to `/sign-in`              |
-| Direct query check against the dev database              | Options, stats, recent rows, references |
+| Check                                                    | Result                                      |
+| -------------------------------------------------------- | ------------------------------------------- |
+| `pnpm test` (unit)                                       | 435 passed, 23 files (integration excluded) |
+| `pnpm test:integration` (real PostgreSQL)                | 7 passed, 3 files                           |
+| Duplicate check-in (two concurrent calls, real DB)       | Exactly one row; one `already_attended`     |
+| Registration persistence (create → cancel → re-register) | One row; reference reused                   |
+| `pnpm lint`                                              | Passed                                      |
+| `tsc --noEmit`                                           | Passed                                      |
+| `pnpm build`                                             | Passed; both new routes compiled            |
+| Runtime guard check (`/attendance/*` unauthenticated)    | 307 redirect to `/sign-in`                  |
+| Direct query check against the dev database              | Options, stats, recent rows, references     |
 
 ## 5. Decisions and rationale
 
