@@ -5,17 +5,20 @@ Drop the screenshots, recordings, and exports for the midterm here, then link th
 [`documentation/AI-DECLARATION-RABOSA.md`](../documentation/AI-DECLARATION-RABOSA.md) Section C, and from
 [`documentation/MIDTERM-SUBMISSION.md`](../documentation/MIDTERM-SUBMISSION.md) Section 3.
 
+Per-student evidence lives in its own named folder. Tanya Mae Fontanilla's captures, session records, index, and
+evidence summary are in [`Tanya-Mae-Fontanilla/`](./Tanya-Mae-Fontanilla/).
+
 ## Final Week 7 session record
 
 The officer attendance workflow and the database-backed student registration work are recorded in
-[`final-wk7-session-record.md`](./final-wk7-session-record.md). The record names the AI session id, the requests and
+[`final-wk7-session-record.md`](./Tanya-Mae-Fontanilla/final-wk7-session-record.md). The record names the AI session id, the requests and
 outputs, the files and commits, the verification results, and the known limitations. The `final-wk7` tag in the main
 repository marks the implementation commit `54bcb76`.
 
-One capture per OpenCode session created during the week: `08-final-wk7-session-01.png` through
-`08-final-wk7-session-09.png`. Each follows the midterm `07-ai-*` convention - session id, date range, model, and the
+One capture per OpenCode session created during the week: `Tanya-Mae-Fontanilla/08-final-wk7-session-01.png` through
+`Tanya-Mae-Fontanilla/08-final-wk7-session-09.png`. Each follows the midterm `07-ai-*` convention - session id, date range, model, and the
 key exchanges in the session view. The index, including the session titles and timestamps, is
-[`final-wk7-sessions.md`](./final-wk7-sessions.md).
+[`final-wk7-sessions.md`](./Tanya-Mae-Fontanilla/final-wk7-sessions.md).
 
 Name files after the number they prove so the grader can match them without opening each one:
 
