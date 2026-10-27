@@ -53,3 +53,5 @@ next-env.d.ts
 
 # AI agent tooling
 /.opencode/
+.superpowers/
+
